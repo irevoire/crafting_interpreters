@@ -1,0 +1,7 @@
+// This is a comment
+(( )){} // grouping stuff
+!*+-/=<> <= == // operators
+"Hello World!" // string
+42 12.45 // number
+variable ifelse // identifier
+if else while // keyword
