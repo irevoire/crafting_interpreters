@@ -78,6 +78,7 @@ impl Scanner {
                     self.advance();
                 }
             }
+            '/' if self.follow('*') => self.multi_line_comment()?,
             '/' => self.add_token(TokenType::Slash),
             '\n' => self.line += 1,
             c if c.is_whitespace() => (),
@@ -181,5 +182,24 @@ impl Scanner {
         } else {
             self.add_token(TokenType::Identifier(ident));
         }
+    }
+
+    fn multi_line_comment(&mut self) -> Result<()> {
+        let mut opened = 0;
+
+        while !self.is_at_end() {
+            if self.follow('/') && self.follow('*') {
+                opened += 1;
+            } else if self.follow('*') && self.follow('/') {
+                if opened == 0 {
+                    return Ok(());
+                } else {
+                    opened -= 1;
+                }
+            }
+            self.advance();
+        }
+
+        bail!("Reached EoF before the end of comment.")
     }
 }

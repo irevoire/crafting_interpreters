@@ -48,7 +48,7 @@ fn run(input: String) -> Result<()> {
     let scanner = Scanner::new(input);
     match scanner.scan_tokens() {
         Ok(tokens) => tokens.iter().for_each(|token| println!("{token}")),
-        Err(errors) => errors.iter().for_each(|token| println!("{errors}")),
+        Err(errors) => errors.iter().for_each(|token| println!("{errors:?}")),
     }
 
     Ok(())
