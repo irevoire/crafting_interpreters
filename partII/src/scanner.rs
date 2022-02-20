@@ -1,6 +1,6 @@
 use crate::token::{Token, TokenType};
 
-use anyhow::{anyhow, bail, ensure, Result};
+use anyhow::{anyhow, bail, ensure, Error, Result};
 
 #[derive(Debug)]
 pub struct Scanner {
@@ -23,10 +23,14 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(mut self) -> Result<Vec<Token>> {
+    pub fn scan_tokens(mut self) -> Result<Vec<Token>, Vec<Error>> {
+        let mut errors = Vec::new();
+
         while !self.is_at_end() {
             self.start = self.current;
-            self.scan_token()?;
+            if let Err(e) = self.scan_token() {
+                errors.push(e);
+            }
         }
 
         self.tokens.push(Token {
@@ -35,12 +39,15 @@ impl Scanner {
             line: self.line,
         });
 
-        Ok(self.tokens)
+        if errors.is_empty() {
+            Ok(self.tokens)
+        } else {
+            Err(errors)
+        }
     }
 
-    /// TODO: we are manipulating string, not bytes
     fn is_at_end(&self) -> bool {
-        self.current >= self.source.len()
+        self.current >= self.source.chars().count()
     }
 
     fn scan_token(&mut self) -> Result<()> {
@@ -77,10 +84,8 @@ impl Scanner {
 
             '"' => self.string()?,
             c if c.is_ascii_digit() => self.number()?,
-
             c if c.is_ascii_alphabetic() || c == '_' => self.identifier(),
 
-            // TODO: We should not bail and instead returns as much errors as possible
             c => bail!("Unexpected character `{c}`."),
         }
 

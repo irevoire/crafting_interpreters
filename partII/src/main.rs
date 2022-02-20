@@ -36,9 +36,9 @@ fn run_prompt() -> Result<()> {
     stdout.flush()?;
 
     for line in stdin.lines() {
+        run(line?)?;
         print!("> ");
         stdout.flush()?;
-        run(line?)?;
     }
 
     Ok(())
@@ -46,9 +46,10 @@ fn run_prompt() -> Result<()> {
 
 fn run(input: String) -> Result<()> {
     let scanner = Scanner::new(input);
-    let tokens = scanner.scan_tokens()?;
-
-    tokens.iter().for_each(|token| println!("{token}"));
+    match scanner.scan_tokens() {
+        Ok(tokens) => tokens.iter().for_each(|token| println!("{token}")),
+        Err(errors) => errors.iter().for_each(|token| println!("{errors}")),
+    }
 
     Ok(())
 }
