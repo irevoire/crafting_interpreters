@@ -1,7 +1,7 @@
 use crate::expr::*;
 
 impl Expr {
-    pub fn print(&self) -> String {
+    pub fn reverse_polish_notation(&self) -> String {
         let mut res = String::new();
 
         match self {
@@ -11,18 +11,22 @@ impl Expr {
                 operator,
             } => {
                 res.push_str(&format!(
-                    "({} {} {})",
+                    "{} {} {}",
+                    left.reverse_polish_notation(),
+                    right.reverse_polish_notation(),
                     operator.lexeme,
-                    left.print(),
-                    right.print()
                 ));
             }
             Self::Grouping { expression } => {
-                res.push_str(&format!("(group {})", expression.print()));
+                res.push_str(&format!("{}", expression.reverse_polish_notation()));
             }
             Self::Literal { value } => res.push_str(value),
             Self::Unary { right, operator } => {
-                res.push_str(&format!("({} {})", operator.lexeme, right.print()));
+                res.push_str(&format!(
+                    "{} {}",
+                    right.reverse_polish_notation(),
+                    operator.lexeme,
+                ));
             }
         }
 

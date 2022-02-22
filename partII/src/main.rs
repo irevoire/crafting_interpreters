@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 mod ast_printer;
 mod expr;
 mod scanner;
@@ -42,7 +43,7 @@ fn main() -> Result<()> {
         }),
     };
 
-    println!("{}", expr.print());
+    println!("{}", expr.reverse_polish_notation());
     return Ok(());
 
     ensure!(args.len() < 3, "Usage {} [script]", args[0]);
