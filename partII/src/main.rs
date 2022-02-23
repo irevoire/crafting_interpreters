@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 mod ast_printer;
 mod expr;
+mod parser;
 mod scanner;
 mod token;
 
@@ -19,32 +20,6 @@ use crate::{
 
 fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
-
-    let expr = Expr::Binary {
-        left: Box::new(Expr::Unary {
-            operator: Token {
-                ty: TokenType::Minus,
-                lexeme: String::from("-"),
-                line: 0,
-            },
-            right: Box::new(Expr::Literal {
-                value: String::from("123"),
-            }),
-        }),
-        operator: Token {
-            ty: TokenType::Star,
-            lexeme: String::from("*"),
-            line: 0,
-        },
-        right: Box::new(Expr::Grouping {
-            expression: Box::new(Expr::Literal {
-                value: String::from("45.67"),
-            }),
-        }),
-    };
-
-    println!("{}", expr.reverse_polish_notation());
-    return Ok(());
 
     ensure!(args.len() < 3, "Usage {} [script]", args[0]);
 
