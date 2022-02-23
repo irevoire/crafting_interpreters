@@ -1,6 +1,6 @@
 use crate::token::{Token, TokenType};
 
-use anyhow::{anyhow, bail, ensure, Error, Result};
+use anyhow::{bail, ensure, Error, Result};
 
 #[derive(Debug)]
 pub struct Scanner {

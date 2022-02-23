@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+#![allow(non_snake_case)]
+
 mod ast_printer;
 mod expr;
 mod parser;
@@ -10,13 +12,10 @@ use std::{
     path::Path,
 };
 
-use anyhow::{ensure, Result};
+use anyhow::{anyhow, ensure, Result};
 use scanner::Scanner;
 
-use crate::{
-    expr::Expr,
-    token::{Token, TokenType},
-};
+use crate::{expr::Expr, parser::Parser};
 
 fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
@@ -25,15 +24,20 @@ fn main() -> Result<()> {
 
     if let Some(filename) = args.get(1) {
         run_file(filename)
-    } else {
+    } else if atty::is(atty::Stream::Stdin) {
         run_prompt()
+    } else {
+        run_file("/dev/stdin")
     }
 }
 
 fn run_file(filename: impl AsRef<Path>) -> Result<()> {
     let file = std::fs::read_to_string(filename)?;
 
-    run(file)
+    let expr = run(file)?;
+    println!("{}", expr.graph());
+
+    Ok(())
 }
 
 fn run_prompt() -> Result<()> {
@@ -45,7 +49,8 @@ fn run_prompt() -> Result<()> {
     stdout.flush()?;
 
     for line in stdin.lines() {
-        run(line?)?;
+        let expr = run(line?)?;
+        println!("{}", expr.polish_notation());
         print!("> ");
         stdout.flush()?;
     }
@@ -53,12 +58,17 @@ fn run_prompt() -> Result<()> {
     Ok(())
 }
 
-fn run(input: String) -> Result<()> {
+fn run(input: String) -> Result<Expr> {
     let scanner = Scanner::new(input);
-    match scanner.scan_tokens() {
-        Ok(tokens) => tokens.iter().for_each(|token| println!("{token}")),
-        Err(errors) => errors.iter().for_each(|token| println!("{errors:?}")),
-    }
+    let tokens = match scanner.scan_tokens() {
+        Ok(tokens) => tokens,
+        Err(errors) => {
+            errors.iter().for_each(|error| println!("{error:?}"));
+            return Err(anyhow!("Scanning errors happened"));
+        }
+    };
 
-    Ok(())
+    let mut parser = Parser::new(tokens);
+
+    parser.parse()
 }
