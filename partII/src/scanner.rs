@@ -1,6 +1,7 @@
+use crate::error::{Error, ScannerError};
 use crate::token::{Token, TokenType};
 
-use anyhow::{bail, ensure, Error, Result};
+type Result<T> = std::result::Result<T, ScannerError>;
 
 #[derive(Debug)]
 pub struct Scanner {
@@ -23,7 +24,7 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(mut self) -> Result<Vec<Token>, Vec<Error>> {
+    pub fn scan_tokens(mut self) -> std::result::Result<Vec<Token>, Error> {
         let mut errors = Vec::new();
 
         while !self.is_at_end() {
@@ -42,7 +43,8 @@ impl Scanner {
         if errors.is_empty() {
             Ok(self.tokens)
         } else {
-            Err(errors)
+            // TODO: show all errors
+            return Err(errors.pop().unwrap())?;
         }
     }
 
@@ -86,7 +88,7 @@ impl Scanner {
             c if c.is_ascii_digit() => self.number()?,
             c if c.is_ascii_alphabetic() || c == '_' => self.identifier(),
 
-            c => bail!("Unexpected character `{c}`."),
+            c => return Err(ScannerError::Character(c)),
         }
 
         Ok(())
@@ -140,7 +142,9 @@ impl Scanner {
             self.advance();
         }
 
-        ensure!(!self.is_at_end(), "Unterminated String");
+        if self.is_at_end() {
+            return Err(ScannerError::String)?;
+        }
 
         self.advance(); // skip the closing `"`
 
@@ -163,7 +167,10 @@ impl Scanner {
             }
         }
 
-        let number = self.source[self.start..self.current].parse()?;
+        let number = &self.source[self.start..self.current];
+        let number = number
+            .parse()
+            .map_err(|e| ScannerError::Number(number.to_string(), e))?;
         self.add_token(TokenType::Number(number));
 
         Ok(())

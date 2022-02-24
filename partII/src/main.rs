@@ -2,6 +2,7 @@
 #![allow(non_snake_case)]
 
 mod ast_printer;
+mod error;
 mod expr;
 mod parser;
 mod scanner;
@@ -12,15 +13,18 @@ use std::{
     path::Path,
 };
 
-use anyhow::{anyhow, ensure, Result};
+use anyhow::anyhow;
 use scanner::Scanner;
 
+use crate::error::{Result, SetupError};
 use crate::{expr::Expr, parser::Parser};
 
 fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
 
-    ensure!(args.len() < 3, "Usage {} [script]", args[0]);
+    if args.len() > 3 {
+        return Err(SetupError::Usage)?;
+    }
 
     if let Some(filename) = args.get(1) {
         run_file(filename)
@@ -32,7 +36,7 @@ fn main() -> Result<()> {
 }
 
 fn run_file(filename: impl AsRef<Path>) -> Result<()> {
-    let file = std::fs::read_to_string(filename)?;
+    let file = std::fs::read_to_string(filename).map_err(SetupError::from)?;
 
     let expr = run(file)?;
     println!("{}", expr.graph());
@@ -46,13 +50,14 @@ fn run_prompt() -> Result<()> {
     let mut stdout = std::io::stdout();
 
     print!("> ");
-    stdout.flush()?;
+    stdout.flush().map_err(SetupError::from)?;
 
     for line in stdin.lines() {
+        let line = line.map_err(SetupError::from);
         let expr = run(line?)?;
         println!("{}", expr.polish_notation());
         print!("> ");
-        stdout.flush()?;
+        stdout.flush().map_err(SetupError::from)?;
     }
 
     Ok(())
@@ -63,12 +68,13 @@ fn run(input: String) -> Result<Expr> {
     let tokens = match scanner.scan_tokens() {
         Ok(tokens) => tokens,
         Err(errors) => {
-            errors.iter().for_each(|error| println!("{error:?}"));
-            return Err(anyhow!("Scanning errors happened"));
+            println!("{errors:?}");
+            // errors.iter().for_each(|error| println!("{error:?}"));
+            return Err(anyhow!("Scanning errors happened"))?;
         }
     };
 
     let mut parser = Parser::new(tokens);
 
-    parser.parse()
+    Ok(parser.parse()?)
 }
