@@ -146,7 +146,7 @@ impl Parser {
     }
 
     fn previous(&self) -> &Token {
-        &self.tokens[self.current - 1]
+        &self.tokens[self.current.saturating_sub(1)]
     }
 
     fn synchronize(&mut self) {
