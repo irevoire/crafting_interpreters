@@ -10,6 +10,8 @@ pub enum Error {
     Setup(#[from] SetupError),
     #[error(transparent)]
     Scanner(#[from] ScannerErrors),
+    #[error(transparent)]
+    Parser(#[from] ParserError),
     #[error("Unexpected error")]
     Unexpected(#[from] anyhow::Error),
 }
@@ -44,4 +46,12 @@ pub enum ScannerError {
     String,
     #[error("Could not convert {0} to a number: {1}")]
     Number(String, std::num::ParseFloatError),
+}
+
+#[derive(Error, Debug)]
+pub enum ParserError {
+    #[error("Expecting expression.")]
+    ExpectingExpression,
+    #[error("{0}")]
+    Consume(String),
 }

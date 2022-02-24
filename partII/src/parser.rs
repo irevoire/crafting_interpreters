@@ -1,9 +1,10 @@
 use crate::{
+    error::ParserError,
     expr::Expr,
     token::{Token, TokenType},
 };
 
-use anyhow::{anyhow, Result};
+type Result<T> = std::result::Result<T, ParserError>;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -101,7 +102,7 @@ impl Parser {
                 self.consume(&TokenType::RightParen, "Expect `)` after expression.")?;
                 Expr::group(expr)
             }
-            _ => return Err(anyhow!("Expect expression")),
+            _ => return Err(ParserError::ExpectingExpression),
         };
 
         Ok(expr)
@@ -111,7 +112,7 @@ impl Parser {
         if self.check(ty) {
             Ok(self.advance().clone())
         } else {
-            Err(anyhow!("{} {}", self.peek(), msg))
+            Err(ParserError::Consume(format!("{} {}", self.peek(), msg)))
         }
     }
 
