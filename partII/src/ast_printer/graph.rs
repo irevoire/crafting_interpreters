@@ -22,7 +22,7 @@ impl Expr {
                 let id = format!("binary_{count}");
                 *count += 1;
                 res.push_str(&format!("{id}\n"));
-                res.push_str(&format!("{id} [label=\"{}\"]\n", operator.lexeme));
+                res.push_str(&format!("\t{id} [label=\"{}\"]\n", operator.lexeme));
                 res.push_str(&format!("\t{id} -> {}", left._graph(count)));
                 res.push_str(&format!("\t{id} -> {}", right._graph(count)));
             }

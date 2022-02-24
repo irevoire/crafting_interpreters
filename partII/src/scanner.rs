@@ -1,4 +1,4 @@
-use crate::error::{Error, ScannerError};
+use crate::error::{Error, ScannerError, ScannerErrors};
 use crate::token::{Token, TokenType};
 
 type Result<T> = std::result::Result<T, ScannerError>;
@@ -43,8 +43,7 @@ impl Scanner {
         if errors.is_empty() {
             Ok(self.tokens)
         } else {
-            // TODO: show all errors
-            return Err(errors.pop().unwrap())?;
+            Err(ScannerErrors(errors).into())
         }
     }
 

@@ -13,7 +13,6 @@ use std::{
     path::Path,
 };
 
-use anyhow::anyhow;
 use scanner::Scanner;
 
 use crate::error::{Result, SetupError};
@@ -54,8 +53,10 @@ fn run_prompt() -> Result<()> {
 
     for line in stdin.lines() {
         let line = line.map_err(SetupError::from);
-        let expr = run(line?)?;
-        println!("{}", expr.polish_notation());
+        match run(line?) {
+            Ok(expr) => println!("{}", expr.polish_notation()),
+            Err(error) => println!("{}", error),
+        }
         print!("> ");
         stdout.flush().map_err(SetupError::from)?;
     }
@@ -65,15 +66,7 @@ fn run_prompt() -> Result<()> {
 
 fn run(input: String) -> Result<Expr> {
     let scanner = Scanner::new(input);
-    let tokens = match scanner.scan_tokens() {
-        Ok(tokens) => tokens,
-        Err(errors) => {
-            println!("{errors:?}");
-            // errors.iter().for_each(|error| println!("{error:?}"));
-            return Err(anyhow!("Scanning errors happened"))?;
-        }
-    };
-
+    let tokens = scanner.scan_tokens()?;
     let mut parser = Parser::new(tokens);
 
     Ok(parser.parse()?)

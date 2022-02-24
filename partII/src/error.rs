@@ -6,11 +6,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("Setup error")]
+    #[error(transparent)]
     Setup(#[from] SetupError),
-    #[error("Scanner error")]
-    Scanner(#[from] ScannerError),
-    #[error("Unexpected")]
+    #[error(transparent)]
+    Scanner(#[from] ScannerErrors),
+    #[error("Unexpected error")]
     Unexpected(#[from] anyhow::Error),
 }
 
@@ -21,6 +21,20 @@ pub enum SetupError {
     #[error("IO Error: ")]
     Io(#[from] io::Error),
 }
+
+#[derive(Debug)]
+pub struct ScannerErrors(pub Vec<ScannerError>);
+
+impl std::fmt::Display for ScannerErrors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for error in &self.0 {
+            writeln!(f, "{error}")?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for ScannerErrors {}
 
 #[derive(Error, Debug)]
 pub enum ScannerError {
