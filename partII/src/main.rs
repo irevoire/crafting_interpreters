@@ -4,9 +4,11 @@
 mod ast_printer;
 mod error;
 mod expr;
+mod interpreter;
 mod parser;
 mod scanner;
 mod token;
+mod value;
 
 use std::{
     io::{BufRead, Write},
@@ -14,6 +16,7 @@ use std::{
 };
 
 use scanner::Scanner;
+use value::Value;
 
 use crate::error::{Result, SetupError};
 use crate::{expr::Expr, parser::Parser};
@@ -37,8 +40,8 @@ fn main() -> Result<()> {
 fn run_file(filename: impl AsRef<Path>) -> Result<()> {
     let file = std::fs::read_to_string(filename).map_err(SetupError::from)?;
 
-    let expr = run(file)?;
-    println!("{}", expr.graph());
+    let value = run(file)?;
+    println!("{}", value);
 
     Ok(())
 }
@@ -54,7 +57,7 @@ fn run_prompt() -> Result<()> {
     for line in stdin.lines() {
         let line = line.map_err(SetupError::from);
         match run(line?) {
-            Ok(expr) => println!("{}", expr.polish_notation()),
+            Ok(value) => println!("{}", value),
             Err(error) => println!("{}", error),
         }
         print!("> ");
@@ -64,10 +67,11 @@ fn run_prompt() -> Result<()> {
     Ok(())
 }
 
-fn run(input: String) -> Result<Expr> {
+fn run(input: String) -> Result<Value> {
     let scanner = Scanner::new(input);
     let tokens = scanner.scan_tokens()?;
-    let mut parser = Parser::new(tokens);
+    let parser = Parser::new(tokens);
+    let expr = parser.parse()?;
 
-    Ok(parser.parse()?)
+    Ok(expr.evaluate()?)
 }

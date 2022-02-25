@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::token::Token;
+use crate::{token::Token, value::Value};
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -13,7 +13,7 @@ pub enum Expr {
         expression: Box<Expr>,
     },
     Literal {
-        value: String,
+        value: Value,
     },
     Unary {
         operator: Token,
@@ -36,7 +36,7 @@ impl Expr {
         }
     }
 
-    pub fn literal(value: String) -> Self {
+    pub fn literal(value: Value) -> Self {
         Self::Literal { value }
     }
 

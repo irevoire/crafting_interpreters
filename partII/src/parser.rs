@@ -2,6 +2,7 @@ use crate::{
     error::ParserError,
     expr::Expr,
     token::{Token, TokenType},
+    value::Value,
 };
 
 type Result<T> = std::result::Result<T, ParserError>;
@@ -17,7 +18,7 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Expr> {
+    pub fn parse(mut self) -> Result<Expr> {
         self.expression()
     }
 
@@ -92,11 +93,11 @@ impl Parser {
     fn primary(&mut self) -> Result<Expr> {
         let token = self.advance();
         let expr = match token.ty {
-            TokenType::False => Expr::literal("false".to_string()),
-            TokenType::True => Expr::literal("true".to_string()),
-            TokenType::Nil => Expr::literal("nil".to_string()),
-            TokenType::Number(n) => Expr::literal(format!("{n}")),
-            TokenType::String(ref s) => Expr::literal(format!("{s}")),
+            TokenType::Nil => Expr::literal(Value::Nil),
+            TokenType::False => Expr::literal(Value::Bool(false)),
+            TokenType::True => Expr::literal(Value::Bool(true)),
+            TokenType::Number(n) => Expr::literal(Value::Number(n)),
+            TokenType::String(ref s) => Expr::literal(Value::String(s.to_string())),
             TokenType::LeftParen => {
                 let expr = self.expression()?;
                 self.consume(&TokenType::RightParen, "Expect `)` after expression.")?;

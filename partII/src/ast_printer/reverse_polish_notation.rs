@@ -20,7 +20,7 @@ impl Expr {
             Self::Grouping { expression } => {
                 res.push_str(&format!("{}", expression.reverse_polish_notation()));
             }
-            Self::Literal { value } => res.push_str(value),
+            Self::Literal { value } => res.push_str(&value.to_string()),
             Self::Unary { right, operator } => {
                 res.push_str(&format!(
                     "{} {}",
