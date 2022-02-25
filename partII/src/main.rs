@@ -2,6 +2,7 @@
 #![allow(non_snake_case)]
 
 mod ast_printer;
+mod environment;
 mod error;
 mod expr;
 mod interpreter;
@@ -16,7 +17,7 @@ use std::{
     path::Path,
 };
 
-use interpreter::interpret;
+use interpreter::Interpreter;
 use scanner::Scanner;
 
 use crate::error::{Result, SetupError};
@@ -40,7 +41,9 @@ fn main() -> Result<()> {
 
 fn run_file(filename: impl AsRef<Path>) -> Result<()> {
     let file = std::fs::read_to_string(filename).map_err(SetupError::from)?;
-    run(file)?;
+    let mut interpreter = Interpreter::new();
+
+    run(file, &mut interpreter)?;
 
     Ok(())
 }
@@ -50,12 +53,14 @@ fn run_prompt() -> Result<()> {
     let stdin = stdin.lock();
     let mut stdout = std::io::stdout();
 
+    let mut interpreter = Interpreter::new();
+
     print!("> ");
     stdout.flush().map_err(SetupError::from)?;
 
     for line in stdin.lines() {
         let line = line.map_err(SetupError::from);
-        match run(line?) {
+        match run(line?, &mut interpreter) {
             Ok(_) => (),
             Err(error) => println!("{}", error),
         }
@@ -66,11 +71,13 @@ fn run_prompt() -> Result<()> {
     Ok(())
 }
 
-fn run(input: String) -> Result<()> {
+fn run(input: String, interpreter: &mut Interpreter) -> Result<()> {
     let scanner = Scanner::new(input);
     let tokens = scanner.scan_tokens()?;
+    println!("scanned");
     let parser = Parser::new(tokens);
     let stmts = parser.parse()?;
+    println!("parsed");
 
-    Ok(interpret(stmts)?)
+    Ok(interpreter.interpret(stmts)?)
 }

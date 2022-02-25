@@ -1,32 +1,49 @@
-use crate::{expr::Expr, stmt::Stmt, token::TokenType, value::Value};
+use crate::{environment::Environment, expr::Expr, stmt::Stmt, token::TokenType, value::Value};
 use anyhow::anyhow;
 
-pub fn interpret(stmts: Vec<Stmt>) -> Result<(), anyhow::Error> {
-    for stmt in stmts {
-        stmt.evaluate()?;
+#[derive(Debug, Clone, Default)]
+pub struct Interpreter {
+    env: Environment,
+}
+
+impl Interpreter {
+    pub fn new() -> Self {
+        Self::default()
     }
-    Ok(())
+
+    pub fn interpret(&mut self, stmts: Vec<Stmt>) -> Result<(), anyhow::Error> {
+        for stmt in stmts {
+            stmt.evaluate(&mut self.env)?;
+        }
+        Ok(())
+    }
 }
 
 impl Stmt {
-    pub fn evaluate(self) -> Result<(), anyhow::Error> {
+    pub fn evaluate(self, env: &mut Environment) -> Result<(), anyhow::Error> {
         match self {
-            Stmt::Expression(expr) => drop(expr.evaluate()),
-            Stmt::Print(expr) => println!("{}", expr.evaluate()?),
+            Stmt::Expression(expr) => drop(expr.evaluate(env)),
+            Stmt::Print(expr) => println!("{}", expr.evaluate(env)?),
+            Stmt::Var { name, initializer } => {
+                let value = initializer
+                    .unwrap_or(Expr::Literal { value: Value::Nil })
+                    .evaluate(env)?;
+                env.define(name.lexeme, value);
+            }
         }
         Ok(())
     }
 }
 
 impl Expr {
-    pub fn evaluate(self) -> Result<Value, anyhow::Error> {
+    pub fn evaluate(self, env: &mut Environment) -> Result<Value, anyhow::Error> {
         match self {
             Expr::Binary {
                 left,
                 operator,
                 right,
             } => {
-                let (left, right) = (left.evaluate()?, right.evaluate()?);
+                let (left, right) = (left.evaluate(env)?, right.evaluate(env)?);
 
                 match operator.ty {
                     TokenType::Slash => Ok((left.number()? / right.number()?).into()),
@@ -50,13 +67,14 @@ impl Expr {
                     _ => unreachable!(),
                 }
             }
-            Expr::Grouping { expression } => expression.evaluate(),
+            Expr::Grouping { expression } => expression.evaluate(env),
             Expr::Literal { value } => Ok(value),
             Expr::Unary { operator, right } => match operator.ty {
-                TokenType::Bang => Ok((right.evaluate()?.is_falsy()).into()),
-                TokenType::Minus => right.evaluate()?.map_number(|n| -n),
+                TokenType::Bang => Ok((right.evaluate(env)?.is_falsy()).into()),
+                TokenType::Minus => right.evaluate(env)?.map_number(|n| -n),
                 _ => unreachable!(),
             },
+            Expr::Variable { name } => env.get(&name).cloned(),
         }
     }
 }

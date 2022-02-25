@@ -1,5 +1,5 @@
 use crate::{
-    error::ParserError,
+    error::{ParserError, ParserErrors},
     expr::Expr,
     stmt::Stmt,
     token::{Token, TokenType},
@@ -19,14 +19,58 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(mut self) -> Result<Vec<Stmt>> {
+    pub fn parse(mut self) -> std::result::Result<Vec<Stmt>, ParserErrors> {
         let mut stmts = Vec::new();
+        let mut errors = Vec::new();
 
         while !self.is_at_end() {
-            stmts.push(self.statement()?);
+            match self.declaration() {
+                Ok(stmt) => stmts.push(stmt),
+                Err(error) => errors.push(error),
+            }
         }
 
-        Ok(stmts)
+        if errors.is_empty() {
+            Ok(stmts)
+        } else {
+            Err(ParserErrors(errors))
+        }
+    }
+
+    fn declaration(&mut self) -> Result<Stmt> {
+        let result = if self.follow([TokenType::Var]) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        };
+
+        if result.is_err() {
+            self.synchronize();
+        }
+
+        result
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt> {
+        // TODO: I should use consume here but I badly designed my types and can't
+        let name = if matches!(self.peek().ty, TokenType::Identifier(_)) {
+            self.advance().clone()
+        } else {
+            return Err(ParserError::Consume(String::from("Expect variable name.")));
+        };
+
+        let mut initializer = None;
+
+        if self.follow([TokenType::Equal]) {
+            initializer = Some(self.expression()?);
+        }
+
+        self.consume(
+            &TokenType::Semicolon,
+            "Expect `;` after variable declaration.",
+        )?;
+
+        Ok(Stmt::Var { name, initializer })
     }
 
     fn statement(&mut self) -> Result<Stmt> {
@@ -132,6 +176,9 @@ impl Parser {
                 self.consume(&TokenType::RightParen, "Expect `)` after expression.")?;
                 Expr::group(expr)
             }
+            TokenType::Identifier(_) => Expr::Variable {
+                name: token.clone(),
+            },
             _ => return Err(ParserError::ExpectingExpression),
         };
 

@@ -46,6 +46,7 @@ impl Expr {
                 res.push_str(&format!("\t{id} [label=\"{}\"]\n", operator.lexeme));
                 res.push_str(&format!("\t{id} -> {}", right._graph(count)));
             }
+            _ => unimplemented!(),
         }
         res
     }

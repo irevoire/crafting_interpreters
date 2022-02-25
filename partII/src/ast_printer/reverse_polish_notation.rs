@@ -28,6 +28,7 @@ impl Expr {
                     operator.lexeme,
                 ));
             }
+            _ => unimplemented!(),
         }
 
         res

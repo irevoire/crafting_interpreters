@@ -28,6 +28,7 @@ impl Expr {
                     right.polish_notation()
                 ));
             }
+            _ => unimplemented!(),
         }
 
         res

@@ -11,7 +11,7 @@ pub enum Error {
     #[error(transparent)]
     Scanner(#[from] ScannerErrors),
     #[error(transparent)]
-    Parser(#[from] ParserError),
+    Parser(#[from] ParserErrors),
     #[error("Unexpected error")]
     Unexpected(#[from] anyhow::Error),
 }
@@ -47,6 +47,20 @@ pub enum ScannerError {
     #[error("Could not convert {0} to a number: {1}")]
     Number(String, std::num::ParseFloatError),
 }
+
+#[derive(Debug)]
+pub struct ParserErrors(pub Vec<ParserError>);
+
+impl std::fmt::Display for ParserErrors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for error in &self.0 {
+            writeln!(f, "{error}")?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for ParserErrors {}
 
 #[derive(Error, Debug)]
 pub enum ParserError {

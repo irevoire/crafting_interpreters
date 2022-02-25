@@ -15,6 +15,9 @@ pub enum Expr {
     Literal {
         value: Value,
     },
+    Variable {
+        name: Token,
+    },
     Unary {
         operator: Token,
         right: Box<Expr>,
@@ -55,6 +58,7 @@ impl Display for Expr {
             Self::Grouping { .. } => write!(f, "grouping"),
             Self::Literal { value } => write!(f, "{}", value),
             Self::Unary { operator, .. } => write!(f, "{}", operator.lexeme),
+            Expr::Variable { name } => write!(f, "{}", name),
         }
     }
 }
