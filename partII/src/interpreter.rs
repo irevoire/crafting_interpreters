@@ -1,5 +1,22 @@
-use crate::{expr::Expr, token::TokenType, value::Value};
+use crate::{expr::Expr, stmt::Stmt, token::TokenType, value::Value};
 use anyhow::anyhow;
+
+pub fn interpret(stmts: Vec<Stmt>) -> Result<(), anyhow::Error> {
+    for stmt in stmts {
+        stmt.evaluate()?;
+    }
+    Ok(())
+}
+
+impl Stmt {
+    pub fn evaluate(self) -> Result<(), anyhow::Error> {
+        match self {
+            Stmt::Expression(expr) => drop(expr.evaluate()),
+            Stmt::Print(expr) => println!("{}", expr.evaluate()?),
+        }
+        Ok(())
+    }
+}
 
 impl Expr {
     pub fn evaluate(self) -> Result<Value, anyhow::Error> {

@@ -7,6 +7,7 @@ mod expr;
 mod interpreter;
 mod parser;
 mod scanner;
+mod stmt;
 mod token;
 mod value;
 
@@ -15,11 +16,11 @@ use std::{
     path::Path,
 };
 
+use interpreter::interpret;
 use scanner::Scanner;
-use value::Value;
 
 use crate::error::{Result, SetupError};
-use crate::{expr::Expr, parser::Parser};
+use crate::parser::Parser;
 
 fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
@@ -39,9 +40,7 @@ fn main() -> Result<()> {
 
 fn run_file(filename: impl AsRef<Path>) -> Result<()> {
     let file = std::fs::read_to_string(filename).map_err(SetupError::from)?;
-
-    let value = run(file)?;
-    println!("{}", value);
+    run(file)?;
 
     Ok(())
 }
@@ -57,7 +56,7 @@ fn run_prompt() -> Result<()> {
     for line in stdin.lines() {
         let line = line.map_err(SetupError::from);
         match run(line?) {
-            Ok(value) => println!("{}", value),
+            Ok(_) => (),
             Err(error) => println!("{}", error),
         }
         print!("> ");
@@ -67,11 +66,11 @@ fn run_prompt() -> Result<()> {
     Ok(())
 }
 
-fn run(input: String) -> Result<Value> {
+fn run(input: String) -> Result<()> {
     let scanner = Scanner::new(input);
     let tokens = scanner.scan_tokens()?;
     let parser = Parser::new(tokens);
-    let expr = parser.parse()?;
+    let stmts = parser.parse()?;
 
-    Ok(expr.evaluate()?)
+    Ok(interpret(stmts)?)
 }

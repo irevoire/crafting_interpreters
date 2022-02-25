@@ -1,6 +1,7 @@
 use crate::{
     error::ParserError,
     expr::Expr,
+    stmt::Stmt,
     token::{Token, TokenType},
     value::Value,
 };
@@ -18,8 +19,36 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(mut self) -> Result<Expr> {
-        self.expression()
+    pub fn parse(mut self) -> Result<Vec<Stmt>> {
+        let mut stmts = Vec::new();
+
+        while !self.is_at_end() {
+            stmts.push(self.statement()?);
+        }
+
+        Ok(stmts)
+    }
+
+    fn statement(&mut self) -> Result<Stmt> {
+        if self.follow([TokenType::Print]) {
+            self.print_statement()
+        } else {
+            self.expression_statement()
+        }
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt> {
+        let value = self.expression()?;
+        self.consume(&TokenType::Semicolon, "Expect `;` after value.")?;
+
+        Ok(Stmt::Print(value))
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt> {
+        let expr = self.expression()?;
+        self.consume(&TokenType::Semicolon, "Expect `;` after expression.")?;
+
+        Ok(Stmt::Expression(expr))
     }
 
     fn expression(&mut self) -> Result<Expr> {
