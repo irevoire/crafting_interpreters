@@ -38,6 +38,17 @@ impl Stmt {
                 *env = std::mem::take(env).destroy().unwrap();
             }
             Stmt::Expression(expr) => drop(expr.evaluate(env)),
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                if condition.evaluate(env)?.is_truthy() {
+                    then_branch.evaluate(env)?;
+                } else if let Some(else_branch) = else_branch {
+                    else_branch.evaluate(env)?;
+                }
+            }
             Stmt::Print(expr) => println!("{}", expr.evaluate(env)?),
             Stmt::Var { name, initializer } => {
                 let value = initializer

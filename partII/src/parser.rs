@@ -74,13 +74,34 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt> {
-        if self.follow([TokenType::Print]) {
+        if self.follow([TokenType::If]) {
+            self.if_statement()
+        } else if self.follow([TokenType::Print]) {
             self.print_statement()
         } else if self.follow([TokenType::LeftBrace]) {
             Ok(Stmt::Block(self.block()?))
         } else {
             self.expression_statement()
         }
+    }
+
+    fn if_statement(&mut self) -> Result<Stmt> {
+        self.consume(&TokenType::LeftParen, "Expect `(` after `if`.")?;
+        let condition = self.expression()?;
+        self.consume(&TokenType::RightParen, "Expect `)` after `if` condition.")?;
+
+        let then_branch = self.statement()?;
+        let mut else_branch = None;
+
+        if self.follow([TokenType::Else]) {
+            else_branch = Some(self.statement()?);
+        }
+
+        Ok(Stmt::If {
+            condition,
+            then_branch: Box::new(then_branch),
+            else_branch: else_branch.map(Box::new),
+        })
     }
 
     fn print_statement(&mut self) -> Result<Stmt> {
@@ -223,7 +244,11 @@ impl Parser {
         if self.check(ty) {
             Ok(self.advance().clone())
         } else {
-            Err(ParserError::Consume(format!("{} {}", self.peek(), msg)))
+            Err(ParserError::Consume(format!(
+                "Got `{}`. {}",
+                self.peek().lexeme,
+                msg
+            )))
         }
     }
 
@@ -279,8 +304,8 @@ impl Parser {
                 | TokenType::While => return,
                 _ => (),
             }
-        }
 
-        self.advance();
+            self.advance();
+        }
     }
 }
