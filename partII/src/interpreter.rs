@@ -20,7 +20,7 @@ impl Interpreter {
 }
 
 impl Stmt {
-    pub fn evaluate(self, env: &mut Environment) -> Result<(), anyhow::Error> {
+    pub fn evaluate(&self, env: &mut Environment) -> Result<(), anyhow::Error> {
         match self {
             Stmt::Block(stmts) => {
                 let previous_env = std::mem::take(env);
@@ -50,11 +50,17 @@ impl Stmt {
                 }
             }
             Stmt::Print(expr) => println!("{}", expr.evaluate(env)?),
+            Stmt::While { condition, body } => {
+                while condition.evaluate(env)?.is_truthy() {
+                    body.evaluate(env)?;
+                }
+            }
             Stmt::Var { name, initializer } => {
                 let value = initializer
+                    .clone()
                     .unwrap_or(Expr::Literal { value: Value::Nil })
                     .evaluate(env)?;
-                env.define(name.lexeme, value);
+                env.define(name.lexeme.clone(), value);
             }
         }
         Ok(())
@@ -62,7 +68,7 @@ impl Stmt {
 }
 
 impl Expr {
-    pub fn evaluate(self, env: &mut Environment) -> Result<Value, anyhow::Error> {
+    pub fn evaluate(&self, env: &mut Environment) -> Result<Value, anyhow::Error> {
         match self {
             Expr::Assign { name, value } => {
                 let value = value.evaluate(env)?;
@@ -99,7 +105,7 @@ impl Expr {
                 }
             }
             Expr::Grouping { expression } => expression.evaluate(env),
-            Expr::Literal { value } => Ok(value),
+            Expr::Literal { value } => Ok(value.clone()),
             Expr::Logical {
                 left,
                 operator,
