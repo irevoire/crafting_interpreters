@@ -56,8 +56,10 @@ impl Expr {
         }
     }
 
-    pub fn literal(value: Value) -> Self {
-        Self::Literal { value }
+    pub fn literal(value: impl Into<Value>) -> Self {
+        Self::Literal {
+            value: value.into(),
+        }
     }
 
     pub fn unary(operator: Token, right: Expr) -> Self {

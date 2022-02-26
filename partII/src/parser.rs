@@ -80,6 +80,8 @@ impl Parser {
             self.print_statement()
         } else if self.follow([TokenType::While]) {
             self.while_statement()
+        } else if self.follow([TokenType::For]) {
+            self.for_statement()
         } else if self.follow([TokenType::LeftBrace]) {
             Ok(Stmt::Block(self.block()?))
         } else {
@@ -127,6 +129,53 @@ impl Parser {
             condition,
             body: Box::new(body),
         })
+    }
+
+    fn for_statement(&mut self) -> Result<Stmt> {
+        self.consume(&TokenType::LeftParen, "Expect `(` after `for`.")?;
+
+        let initializer = if self.follow([TokenType::Semicolon]) {
+            None
+        } else if self.follow([TokenType::Var]) {
+            Some(self.var_declaration()?)
+        } else {
+            Some(self.expression_statement()?)
+        };
+
+        let condition = if self.check(&TokenType::Semicolon) {
+            None
+        } else {
+            Some(self.expression()?)
+        };
+        self.consume(&TokenType::Semicolon, "Expect `;` after loop condition.")?;
+
+        let increment = if self.check(&TokenType::RightParen) {
+            None
+        } else {
+            Some(self.expression()?)
+        };
+
+        self.consume(&TokenType::RightParen, "Expect `)` after for clauses.")?;
+
+        let mut body = self.statement()?;
+
+        // desugar the for loop
+        if let Some(increment) = increment {
+            body = Stmt::Block(vec![body, Stmt::Expression(increment)]);
+        }
+
+        let condition = condition.unwrap_or(Expr::literal(true));
+
+        body = Stmt::While {
+            condition,
+            body: Box::new(body),
+        };
+
+        if let Some(initializer) = initializer {
+            body = Stmt::Block(vec![initializer, body]);
+        }
+
+        Ok(body)
     }
 
     fn block(&mut self) -> Result<Vec<Stmt>> {
@@ -264,10 +313,10 @@ impl Parser {
         let token = self.advance();
         let expr = match token.ty {
             TokenType::Nil => Expr::literal(Value::Nil),
-            TokenType::False => Expr::literal(Value::Bool(false)),
-            TokenType::True => Expr::literal(Value::Bool(true)),
-            TokenType::Number(n) => Expr::literal(Value::Number(n)),
-            TokenType::String(ref s) => Expr::literal(Value::String(s.to_string())),
+            TokenType::False => Expr::literal(false),
+            TokenType::True => Expr::literal(true),
+            TokenType::Number(n) => Expr::literal(n),
+            TokenType::String(ref s) => Expr::literal(s.to_string()),
             TokenType::LeftParen => {
                 let expr = self.expression()?;
                 self.consume(&TokenType::RightParen, "Expect `)` after expression.")?;
