@@ -2,6 +2,8 @@ use thiserror::Error;
 
 use std::io;
 
+use crate::token::Token;
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Error, Debug)]
@@ -66,6 +68,8 @@ impl std::error::Error for ParserErrors {}
 pub enum ParserError {
     #[error("Expecting expression.")]
     ExpectingExpression,
+    #[error("Invalid assignment target {0}.")]
+    InvalidAssignmentTarget(Token),
     #[error("{0}")]
     Consume(String),
 }

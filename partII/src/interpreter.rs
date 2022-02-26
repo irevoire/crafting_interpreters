@@ -38,6 +38,11 @@ impl Stmt {
 impl Expr {
     pub fn evaluate(self, env: &mut Environment) -> Result<Value, anyhow::Error> {
         match self {
+            Expr::Assign { name, value } => {
+                let value = value.evaluate(env)?;
+                env.assign(&name, value.clone())?;
+                Ok(value)
+            }
             Expr::Binary {
                 left,
                 operator,

@@ -16,6 +16,15 @@ impl Environment {
         self.values.insert(name, value);
     }
 
+    pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), anyhow::Error> {
+        if self.values.contains_key(&name.lexeme) {
+            self.values.insert(name.lexeme.clone(), value);
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Undefined variable `{}`.", name))
+        }
+    }
+
     pub fn get(&self, name: &Token) -> Result<&Value, anyhow::Error> {
         self.values
             .get(&name.lexeme)

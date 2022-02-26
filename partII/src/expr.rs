@@ -4,6 +4,10 @@ use crate::{token::Token, value::Value};
 
 #[derive(Debug, Clone)]
 pub enum Expr {
+    Assign {
+        name: Token,
+        value: Box<Expr>,
+    },
     Binary {
         left: Box<Expr>,
         operator: Token,
@@ -54,6 +58,7 @@ impl Expr {
 impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Assign { name, .. } => write!(f, "assign {}", name.lexeme),
             Self::Binary { operator, .. } => write!(f, "{}", operator.lexeme),
             Self::Grouping { .. } => write!(f, "grouping"),
             Self::Literal { value } => write!(f, "{}", value),
