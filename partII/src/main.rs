@@ -74,10 +74,8 @@ fn run_prompt() -> Result<()> {
 fn run(input: String, interpreter: &mut Interpreter) -> Result<()> {
     let scanner = Scanner::new(input);
     let tokens = scanner.scan_tokens()?;
-    println!("scanned");
     let parser = Parser::new(tokens);
     let stmts = parser.parse()?;
-    println!("parsed");
 
     Ok(interpreter.interpret(stmts)?)
 }

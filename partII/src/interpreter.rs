@@ -22,6 +22,21 @@ impl Interpreter {
 impl Stmt {
     pub fn evaluate(self, env: &mut Environment) -> Result<(), anyhow::Error> {
         match self {
+            Stmt::Block(stmts) => {
+                let previous_env = std::mem::take(env);
+                env.enclose(previous_env);
+
+                for stmt in stmts {
+                    match stmt.evaluate(env) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            *env = std::mem::take(env).destroy().unwrap();
+                            return Err(e);
+                        }
+                    }
+                }
+                *env = std::mem::take(env).destroy().unwrap();
+            }
             Stmt::Expression(expr) => drop(expr.evaluate(env)),
             Stmt::Print(expr) => println!("{}", expr.evaluate(env)?),
             Stmt::Var { name, initializer } => {

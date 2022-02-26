@@ -4,6 +4,7 @@ use crate::{token::Token, value::Value};
 
 #[derive(Default, Debug, Clone)]
 pub struct Environment {
+    enclosing: Option<Box<Environment>>,
     values: HashMap<String, Value>,
 }
 
@@ -12,28 +13,44 @@ impl Environment {
         Self::default()
     }
 
+    pub fn enclose(&mut self, enclosing: Self) {
+        self.enclosing = Some(Box::new(enclosing));
+    }
+
+    pub fn destroy(self) -> Option<Environment> {
+        self.enclosing.map(|env| *env)
+    }
+
     pub fn define(&mut self, name: String, value: Value) {
         self.values.insert(name, value);
     }
 
     pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), anyhow::Error> {
-        if self.values.contains_key(&name.lexeme) {
-            self.values.insert(name.lexeme.clone(), value);
-            Ok(())
-        } else {
-            Err(anyhow::anyhow!("Undefined variable `{}`.", name))
-        }
+        *self.get_mut(name)? = value;
+        Ok(())
     }
 
     pub fn get(&self, name: &Token) -> Result<&Value, anyhow::Error> {
         self.values
             .get(&name.lexeme)
+            .or_else(|| {
+                self.enclosing
+                    .as_ref()
+                    .map(|env| env.get(name).ok())
+                    .flatten()
+            })
             .ok_or(anyhow::anyhow!("Undefined variable `{}`.", name.lexeme))
     }
 
     pub fn get_mut(&mut self, name: &Token) -> Result<&mut Value, anyhow::Error> {
         self.values
             .get_mut(&name.lexeme)
+            .or_else(|| {
+                self.enclosing
+                    .as_mut()
+                    .map(|env| env.get_mut(name).ok())
+                    .flatten()
+            })
             .ok_or(anyhow::anyhow!("Undefined variable `{}`.", name.lexeme))
     }
 }
