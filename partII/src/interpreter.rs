@@ -100,6 +100,25 @@ impl Expr {
             }
             Expr::Grouping { expression } => expression.evaluate(env),
             Expr::Literal { value } => Ok(value),
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => {
+                let left = left.evaluate(env)?;
+
+                if operator.ty == TokenType::Or {
+                    if left.is_truthy() {
+                        return Ok(left);
+                    }
+                } else {
+                    if left.is_falsy() {
+                        return Ok(left);
+                    }
+                }
+
+                right.evaluate(env)
+            }
             Expr::Unary { operator, right } => match operator.ty {
                 TokenType::Bang => Ok((right.evaluate(env)?.is_falsy()).into()),
                 TokenType::Minus => right.evaluate(env)?.map_number(|n| -n),

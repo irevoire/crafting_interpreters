@@ -135,7 +135,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.follow([TokenType::Equal]) {
             let equals = self.previous().clone();
@@ -149,6 +149,30 @@ impl Parser {
             }
 
             return Err(ParserError::InvalidAssignmentTarget(equals));
+        }
+
+        Ok(expr)
+    }
+
+    fn or(&mut self) -> Result<Expr> {
+        let mut expr = self.and()?;
+
+        while self.follow([TokenType::Or]) {
+            let operator = self.previous().clone();
+            let right = self.and()?;
+            expr = Expr::logical(expr, operator, right);
+        }
+
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> Result<Expr> {
+        let mut expr = self.comparison()?;
+
+        while self.follow([TokenType::And]) {
+            let operator = self.previous().clone();
+            let right = self.comparison()?;
+            expr = Expr::logical(expr, operator, right);
         }
 
         Ok(expr)

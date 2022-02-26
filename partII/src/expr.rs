@@ -19,6 +19,11 @@ pub enum Expr {
     Literal {
         value: Value,
     },
+    Logical {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
     Variable {
         name: Token,
     },
@@ -31,6 +36,14 @@ pub enum Expr {
 impl Expr {
     pub fn binary(left: Expr, operator: Token, right: Expr) -> Self {
         Self::Binary {
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        }
+    }
+
+    pub fn logical(left: Expr, operator: Token, right: Expr) -> Self {
+        Self::Logical {
             left: Box::new(left),
             operator,
             right: Box::new(right),
@@ -61,6 +74,7 @@ impl Display for Expr {
             Self::Assign { name, .. } => write!(f, "assign {}", name.lexeme),
             Self::Binary { operator, .. } => write!(f, "{}", operator.lexeme),
             Self::Grouping { .. } => write!(f, "grouping"),
+            Self::Logical { operator, .. } => write!(f, "{}", operator.lexeme),
             Self::Literal { value } => write!(f, "{}", value),
             Self::Unary { operator, .. } => write!(f, "{}", operator.lexeme),
             Expr::Variable { name } => write!(f, "{}", name),
