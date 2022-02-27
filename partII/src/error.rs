@@ -69,7 +69,9 @@ pub enum ParserError {
     #[error("Expecting expression.")]
     ExpectingExpression,
     #[error("Can't have more than 255 arguments.")]
-    TooMayArguments,
+    TooManyArguments,
+    #[error("Can't have more than 255 parameters.")]
+    TooManyParameters,
     #[error("Invalid assignment target {0}.")]
     InvalidAssignmentTarget(Token),
     #[error("{0}")]

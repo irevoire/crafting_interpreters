@@ -38,7 +38,9 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Stmt> {
-        let result = if self.follow([TokenType::Var]) {
+        let result = if self.follow([TokenType::Fun]) {
+            self.function("function")
+        } else if self.follow([TokenType::Var]) {
             self.var_declaration()
         } else {
             self.statement()
@@ -51,14 +53,44 @@ impl Parser {
         result
     }
 
-    fn var_declaration(&mut self) -> Result<Stmt> {
-        // TODO: I should use consume here but I badly designed my types and can't
-        let name = if matches!(self.peek().ty, TokenType::Identifier(_)) {
-            self.advance().clone()
-        } else {
-            return Err(ParserError::Consume(String::from("Expect variable name.")));
-        };
+    fn function(&mut self, kind: &str) -> Result<Stmt> {
+        let name = self.consume_ident(format!("Expect {kind} name."))?;
 
+        self.consume(
+            &TokenType::LeftParen,
+            &format!("Expect `(` after {kind} name."),
+        )?;
+
+        let mut params = Vec::new();
+
+        if !self.check(&TokenType::RightParen) {
+            params.push(self.consume_ident("Expect parameter name.")?);
+            while self.follow([TokenType::Comma]) {
+                if params.len() >= 255 {
+                    return Err(ParserError::TooManyParameters);
+                }
+                params.push(self.consume_ident("Expect parameter name.")?);
+            }
+        }
+
+        self.consume(&TokenType::RightParen, "Expect `)` after parameters.")?;
+
+        self.consume(
+            &TokenType::LeftBrace,
+            format!("Expect `{{` before {kind} body."),
+        )?;
+
+        let body = self.block()?;
+
+        Ok(Stmt::Function(crate::callable::Function {
+            name,
+            params,
+            body,
+        }))
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt> {
+        let name = self.consume_ident("Expect variable name.")?;
         let mut initializer = None;
 
         if self.follow([TokenType::Equal]) {
@@ -328,7 +360,7 @@ impl Parser {
             arguments.push(self.expression()?);
             while self.follow([TokenType::Comma]) {
                 if arguments.len() >= 255 {
-                    return Err(ParserError::TooMayArguments);
+                    return Err(ParserError::TooManyArguments);
                 }
                 arguments.push(self.expression()?);
             }
@@ -365,14 +397,27 @@ impl Parser {
         Ok(expr)
     }
 
-    fn consume(&mut self, ty: &TokenType, msg: &str) -> Result<Token> {
+    fn consume(&mut self, ty: &TokenType, msg: impl AsRef<str>) -> Result<Token> {
         if self.check(ty) {
             Ok(self.advance().clone())
         } else {
             Err(ParserError::Consume(format!(
                 "Got `{}`. {}",
                 self.peek().lexeme,
-                msg
+                msg.as_ref()
+            )))
+        }
+    }
+
+    // TODO: I shouldn’t need this method but since I badly designed my types I can’t call consume directly
+    fn consume_ident(&mut self, msg: impl AsRef<str>) -> Result<Token> {
+        if matches!(self.peek().ty, TokenType::Identifier(_)) {
+            Ok(self.advance().clone())
+        } else {
+            Err(ParserError::Consume(format!(
+                "Got `{}`. {}",
+                self.peek().lexeme,
+                msg.as_ref()
             )))
         }
     }

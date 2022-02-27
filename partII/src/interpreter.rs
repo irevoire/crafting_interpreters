@@ -47,6 +47,7 @@ impl Stmt {
                 *env = std::mem::take(env).destroy().unwrap();
             }
             Stmt::Expression(expr) => drop(expr.evaluate(env)?),
+            Stmt::Function(fun) => fun.evaluate(env)?,
             Stmt::If {
                 condition,
                 then_branch,

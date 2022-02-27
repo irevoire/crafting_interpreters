@@ -1,9 +1,10 @@
-use crate::{expr::Expr, token::Token};
+use crate::{callable::Function, expr::Expr, token::Token};
 
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Block(Vec<Stmt>),
     Expression(Expr),
+    Function(Function),
     If {
         condition: Expr,
         then_branch: Box<Stmt>,

@@ -1,4 +1,6 @@
-use crate::{environment::Environment, value::Value};
+use std::rc::Rc;
+
+use crate::{environment::Environment, stmt::Stmt, token::Token, value::Value};
 
 use anyhow::{anyhow, Result};
 
@@ -28,25 +30,46 @@ impl Callable for Value {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Function {
-    pub arity: usize,
+    pub name: Token,
+    pub params: Vec<Token>,
+    pub body: Vec<Stmt>,
+}
+
+impl Function {
+    pub fn evaluate(&self, env: &mut Environment) -> Result<(), anyhow::Error> {
+        let fun = Rc::new(self.clone()) as Rc<dyn Callable>;
+        env.define(self.name.lexeme.to_string(), fun.into());
+        Ok(())
+    }
 }
 
 impl Callable for Function {
-    fn call(&self, _env: &mut Environment, arguments: Vec<Value>) -> Result<Value> {
-        if self.arity != arguments.len() {
+    fn call(&self, env: &mut Environment, arguments: Vec<Value>) -> Result<Value> {
+        if self.params.len() != arguments.len() {
             return Err(anyhow!(
                 "Expected {} arguments but got {}.",
-                self.arity,
+                self.params.len(),
                 arguments.len()
             ));
         }
 
-        todo!()
+        let previous_env = std::mem::take(env);
+        env.enclose(previous_env);
+
+        for (param, arg) in self.params.iter().zip(arguments) {
+            env.define(param.lexeme.to_string(), arg);
+        }
+
+        Stmt::Block(self.body.clone()).evaluate(env)?;
+
+        *env = std::mem::take(env).destroy().unwrap();
+
+        Ok(Value::Nil)
     }
 
     fn arity(&self) -> usize {
-        self.arity
+        self.params.len()
     }
 }
