@@ -13,6 +13,11 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
+    Call {
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>,
+    },
     Grouping {
         expression: Box<Expr>,
     },
@@ -75,6 +80,7 @@ impl Display for Expr {
         match self {
             Self::Assign { name, .. } => write!(f, "assign {}", name.lexeme),
             Self::Binary { operator, .. } => write!(f, "{}", operator.lexeme),
+            Self::Call { .. } => write!(f, "call"),
             Self::Grouping { .. } => write!(f, "grouping"),
             Self::Logical { operator, .. } => write!(f, "{}", operator.lexeme),
             Self::Literal { value } => write!(f, "{}", value),

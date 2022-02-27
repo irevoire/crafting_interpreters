@@ -1,13 +1,32 @@
 use anyhow::anyhow;
 
-use std::fmt::Display;
+use std::{fmt::Display, rc::Rc};
 
-#[derive(Debug, Clone, PartialEq)]
+use crate::callable::Callable;
+
+#[derive(Debug, Clone)]
 pub enum Value {
+    Callable(Rc<dyn Callable>),
     String(String),
     Number(f64),
     Bool(bool),
     Nil,
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Callable { .. }, _) | (_, Self::Callable { .. }) => {
+                // TODO: we should check if it point to the exact same location
+                panic!("You can't compare functions")
+            }
+            (Self::String(left), Self::String(right)) => left == right,
+            (Self::Number(left), Self::Number(right)) => left == right,
+            (Self::Bool(left), Self::Bool(right)) => left == right,
+            (Self::Nil, Self::Nil) => true,
+            _ => false,
+        }
+    }
 }
 
 impl Value {
@@ -33,6 +52,10 @@ impl Value {
 
     pub fn is_string(&self) -> bool {
         matches!(self, Self::String(_))
+    }
+
+    pub fn is_callable(&self) -> bool {
+        matches!(self, Self::Callable { .. })
     }
 
     pub fn number(self) -> Result<f64, anyhow::Error> {
@@ -88,9 +111,16 @@ impl From<bool> for Value {
     }
 }
 
+impl From<Rc<dyn Callable>> for Value {
+    fn from(fun: Rc<dyn Callable>) -> Self {
+        Self::Callable(fun)
+    }
+}
+
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Callable { .. } => write!(f, "fun"),
             Self::String(s) => write!(f, "{}", s),
             Self::Number(s) => write!(f, "{}", s),
             Self::Bool(b) => write!(f, "{}", b),

@@ -14,7 +14,7 @@ pub enum Error {
     Scanner(#[from] ScannerErrors),
     #[error(transparent)]
     Parser(#[from] ParserErrors),
-    #[error("Unexpected error")]
+    #[error("Unexpected error: {0}")]
     Unexpected(#[from] anyhow::Error),
 }
 
@@ -68,6 +68,8 @@ impl std::error::Error for ParserErrors {}
 pub enum ParserError {
     #[error("Expecting expression.")]
     ExpectingExpression,
+    #[error("Can't have more than 255 arguments.")]
+    TooMayArguments,
     #[error("Invalid assignment target {0}.")]
     InvalidAssignmentTarget(Token),
     #[error("{0}")]

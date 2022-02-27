@@ -1,4 +1,7 @@
-use crate::{environment::Environment, expr::Expr, stmt::Stmt, token::TokenType, value::Value};
+use crate::{
+    callable::Callable, environment::Environment, expr::Expr, native_functions, stmt::Stmt,
+    token::TokenType, value::Value,
+};
 use anyhow::anyhow;
 
 #[derive(Debug, Clone, Default)]
@@ -8,7 +11,13 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        Self::default()
+        let mut interpreter = Self::default();
+
+        interpreter
+            .env
+            .define(String::from("clock"), native_functions::Clock::value());
+
+        interpreter
     }
 
     pub fn interpret(&mut self, stmts: Vec<Stmt>) -> Result<(), anyhow::Error> {
@@ -37,7 +46,7 @@ impl Stmt {
                 }
                 *env = std::mem::take(env).destroy().unwrap();
             }
-            Stmt::Expression(expr) => drop(expr.evaluate(env)),
+            Stmt::Expression(expr) => drop(expr.evaluate(env)?),
             Stmt::If {
                 condition,
                 then_branch,
@@ -103,6 +112,20 @@ impl Expr {
                     TokenType::EqualEqual => Ok((left == right).into()),
                     _ => unreachable!(),
                 }
+            }
+            Expr::Call {
+                callee,
+                paren: _,
+                arguments,
+            } => {
+                let callee = callee.evaluate(env)?;
+
+                let arguments = arguments
+                    .into_iter()
+                    .map(|arg| arg.evaluate(env))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                callee.call(env, arguments)
             }
             Expr::Grouping { expression } => expression.evaluate(env),
             Expr::Literal { value } => Ok(value.clone()),

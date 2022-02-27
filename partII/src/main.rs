@@ -2,10 +2,12 @@
 #![allow(non_snake_case)]
 
 mod ast_printer;
+mod callable;
 mod environment;
 mod error;
 mod expr;
 mod interpreter;
+mod native_functions;
 mod parser;
 mod scanner;
 mod stmt;
