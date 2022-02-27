@@ -1,8 +1,10 @@
 use crate::{
-    callable::Callable, environment::Environment, expr::Expr, native_functions, stmt::Stmt,
-    token::TokenType, value::Value,
+    callable::Callable, environment::Environment, error::RuntimeError, expr::Expr,
+    native_functions, stmt::Stmt, token::TokenType, value::Value,
 };
 use anyhow::anyhow;
+
+type Result<T> = std::result::Result<T, RuntimeError>;
 
 #[derive(Debug, Clone, Default)]
 pub struct Interpreter {
@@ -20,7 +22,7 @@ impl Interpreter {
         interpreter
     }
 
-    pub fn interpret(&mut self, stmts: Vec<Stmt>) -> Result<(), anyhow::Error> {
+    pub fn interpret(&mut self, stmts: Vec<Stmt>) -> std::result::Result<(), RuntimeError> {
         for stmt in stmts {
             stmt.evaluate(&mut self.env)?;
         }
@@ -29,7 +31,7 @@ impl Interpreter {
 }
 
 impl Stmt {
-    pub fn evaluate(&self, env: &mut Environment) -> Result<(), anyhow::Error> {
+    pub fn evaluate(&self, env: &mut Environment) -> Result<()> {
         match self {
             Stmt::Block(stmts) => {
                 let previous_env = std::mem::take(env);
@@ -60,6 +62,10 @@ impl Stmt {
                 }
             }
             Stmt::Print(expr) => println!("{}", expr.evaluate(env)?),
+            Stmt::Return { value, .. } => {
+                let value = value.as_ref().unwrap_or(&Expr::default()).evaluate(env)?;
+                return Err(RuntimeError::Return(value));
+            }
             Stmt::While { condition, body } => {
                 while condition.evaluate(env)?.is_truthy() {
                     body.evaluate(env)?;
@@ -78,7 +84,7 @@ impl Stmt {
 }
 
 impl Expr {
-    pub fn evaluate(&self, env: &mut Environment) -> Result<Value, anyhow::Error> {
+    pub fn evaluate(&self, env: &mut Environment) -> Result<Value> {
         match self {
             Expr::Assign { name, value } => {
                 let value = value.evaluate(env)?;
@@ -96,15 +102,15 @@ impl Expr {
                     TokenType::Slash => Ok((left.number()? / right.number()?).into()),
                     TokenType::Star => Ok((left.number()? * right.number()?).into()),
                     TokenType::Minus => Ok((left.number()? - right.number()?).into()),
+                    TokenType::Plus if left.is_string() || right.is_string() => {
+                        Ok((left.to_string() + &right.to_string()).into())
+                    }
                     TokenType::Plus if left.is_number() => {
                         Ok((left.number()? + right.number()?).into())
                     }
-                    TokenType::Plus if left.is_string() => {
-                        Ok((left.string()? + &right.string()?).into())
-                    }
                     TokenType::Plus => Err(anyhow!(
                         "Operator `+` can only be applied to `string` or `number`"
-                    )),
+                    ))?,
                     TokenType::Greater => Ok((left.number()? > right.number()?).into()),
                     TokenType::GreaterEqual => Ok((left.number()? >= right.number()?).into()),
                     TokenType::Less => Ok((left.number()? < right.number()?).into()),
@@ -124,7 +130,7 @@ impl Expr {
                 let arguments = arguments
                     .into_iter()
                     .map(|arg| arg.evaluate(env))
-                    .collect::<Result<Vec<_>, _>>()?;
+                    .collect::<Result<Vec<_>>>()?;
 
                 callee.call(env, arguments)
             }

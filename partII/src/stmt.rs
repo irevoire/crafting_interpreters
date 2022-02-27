@@ -11,6 +11,10 @@ pub enum Stmt {
         else_branch: Option<Box<Stmt>>,
     },
     Print(Expr),
+    Return {
+        keyword: Token,
+        value: Option<Expr>,
+    },
     Var {
         name: Token,
         initializer: Option<Expr>,
@@ -19,4 +23,10 @@ pub enum Stmt {
         condition: Expr,
         body: Box<Stmt>,
     },
+}
+
+impl Default for Stmt {
+    fn default() -> Self {
+        Stmt::Expression(Expr::default())
+    }
 }

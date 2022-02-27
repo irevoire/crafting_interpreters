@@ -1,24 +1,26 @@
 use std::rc::Rc;
 
-use crate::{environment::Environment, stmt::Stmt, token::Token, value::Value};
+use crate::{
+    environment::Environment, error::RuntimeError, stmt::Stmt, token::Token, value::Value,
+};
 
-use anyhow::{anyhow, Result};
+use anyhow::anyhow;
 
 pub trait Callable: std::fmt::Debug {
-    fn call(&self, env: &mut Environment, arguments: Vec<Value>) -> Result<Value>;
+    fn call(&self, env: &mut Environment, arguments: Vec<Value>) -> Result<Value, RuntimeError>;
     fn arity(&self) -> usize;
 }
 
 impl Callable for Value {
-    fn call(&self, env: &mut Environment, arguments: Vec<Value>) -> Result<Value> {
+    fn call(&self, env: &mut Environment, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
         match self {
             Self::Callable(fun) if fun.arity() != arguments.len() => Err(anyhow!(
                 "Expected {} arguments but got {}.",
                 fun.arity(),
                 arguments.len()
-            )),
+            ))?,
             Self::Callable(fun) => fun.call(env, arguments),
-            _ => Err(anyhow!("Can only call functions or classes.")),
+            _ => Err(anyhow!("Can only call functions or classes."))?,
         }
     }
 
@@ -38,7 +40,7 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn evaluate(&self, env: &mut Environment) -> Result<(), anyhow::Error> {
+    pub fn evaluate(&self, env: &mut Environment) -> Result<(), RuntimeError> {
         let fun = Rc::new(self.clone()) as Rc<dyn Callable>;
         env.define(self.name.lexeme.to_string(), fun.into());
         Ok(())
@@ -46,13 +48,13 @@ impl Function {
 }
 
 impl Callable for Function {
-    fn call(&self, env: &mut Environment, arguments: Vec<Value>) -> Result<Value> {
+    fn call(&self, env: &mut Environment, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
         if self.params.len() != arguments.len() {
             return Err(anyhow!(
                 "Expected {} arguments but got {}.",
                 self.params.len(),
                 arguments.len()
-            ));
+            ))?;
         }
 
         let previous_env = std::mem::take(env);
@@ -62,11 +64,15 @@ impl Callable for Function {
             env.define(param.lexeme.to_string(), arg);
         }
 
-        Stmt::Block(self.body.clone()).evaluate(env)?;
+        let result = match Stmt::Block(self.body.clone()).evaluate(env) {
+            Ok(()) => Ok(Value::Nil),
+            Err(RuntimeError::Return(value)) => Ok(value),
+            Err(e) => Err(e),
+        };
 
         *env = std::mem::take(env).destroy().unwrap();
 
-        Ok(Value::Nil)
+        result
     }
 
     fn arity(&self) -> usize {

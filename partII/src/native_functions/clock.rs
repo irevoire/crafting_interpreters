@@ -3,9 +3,9 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use anyhow::ensure;
+use anyhow::anyhow;
 
-use crate::{callable::Callable, environment::Environment, value::Value};
+use crate::{callable::Callable, environment::Environment, error::RuntimeError, value::Value};
 
 #[derive(Debug)]
 pub struct Clock {}
@@ -18,8 +18,10 @@ impl Clock {
 }
 
 impl Callable for Clock {
-    fn call(&self, _env: &mut Environment, arguments: Vec<Value>) -> anyhow::Result<Value> {
-        ensure!(arguments.is_empty(), "`clock` expect no argument.");
+    fn call(&self, _env: &mut Environment, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+        if !arguments.is_empty() {
+            return Err(anyhow!("`clock` expect no argument."))?;
+        }
 
         let start = SystemTime::now();
         let timestamp = start

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{token::Token, value::Value};
+use crate::{error::RuntimeError, token::Token, value::Value};
 
 #[derive(Default, Debug, Clone)]
 pub struct Environment {
@@ -25,13 +25,14 @@ impl Environment {
         self.values.insert(name, value);
     }
 
-    pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), anyhow::Error> {
+    pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), RuntimeError> {
         *self.get_mut(name)? = value;
         Ok(())
     }
 
-    pub fn get(&self, name: &Token) -> Result<&Value, anyhow::Error> {
-        self.values
+    pub fn get(&self, name: &Token) -> Result<&Value, RuntimeError> {
+        Ok(self
+            .values
             .get(&name.lexeme)
             .or_else(|| {
                 self.enclosing
@@ -39,11 +40,12 @@ impl Environment {
                     .map(|env| env.get(name).ok())
                     .flatten()
             })
-            .ok_or(anyhow::anyhow!("Undefined variable `{}`.", name.lexeme))
+            .ok_or(anyhow::anyhow!("Undefined variable `{}`.", name.lexeme))?)
     }
 
-    pub fn get_mut(&mut self, name: &Token) -> Result<&mut Value, anyhow::Error> {
-        self.values
+    pub fn get_mut(&mut self, name: &Token) -> Result<&mut Value, RuntimeError> {
+        Ok(self
+            .values
             .get_mut(&name.lexeme)
             .or_else(|| {
                 self.enclosing
@@ -51,6 +53,6 @@ impl Environment {
                     .map(|env| env.get_mut(name).ok())
                     .flatten()
             })
-            .ok_or(anyhow::anyhow!("Undefined variable `{}`.", name.lexeme))
+            .ok_or(anyhow::anyhow!("Undefined variable `{}`.", name.lexeme))?)
     }
 }

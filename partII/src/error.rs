@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use std::io;
 
-use crate::token::Token;
+use crate::{token::Token, value::Value};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -14,6 +14,8 @@ pub enum Error {
     Scanner(#[from] ScannerErrors),
     #[error(transparent)]
     Parser(#[from] ParserErrors),
+    #[error(transparent)]
+    Runtime(#[from] RuntimeError),
     #[error("Unexpected error: {0}")]
     Unexpected(#[from] anyhow::Error),
 }
@@ -76,4 +78,12 @@ pub enum ParserError {
     InvalidAssignmentTarget(Token),
     #[error("{0}")]
     Consume(String),
+}
+
+#[derive(Error, Debug)]
+pub enum RuntimeError {
+    #[error("Return called outside of a function.")]
+    Return(Value),
+    #[error("Unexpected error: {0}")]
+    Unexpected(#[from] anyhow::Error),
 }

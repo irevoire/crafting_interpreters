@@ -75,6 +75,14 @@ impl Expr {
     }
 }
 
+impl Default for Expr {
+    fn default() -> Self {
+        Expr::Literal {
+            value: Value::default(),
+        }
+    }
+}
+
 impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

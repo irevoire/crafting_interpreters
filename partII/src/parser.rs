@@ -110,6 +110,8 @@ impl Parser {
             self.if_statement()
         } else if self.follow([TokenType::Print]) {
             self.print_statement()
+        } else if self.follow([TokenType::Return]) {
+            self.return_statement()
         } else if self.follow([TokenType::While]) {
             self.while_statement()
         } else if self.follow([TokenType::For]) {
@@ -145,6 +147,20 @@ impl Parser {
         self.consume(&TokenType::Semicolon, "Expect `;` after value.")?;
 
         Ok(Stmt::Print(value))
+    }
+
+    fn return_statement(&mut self) -> Result<Stmt> {
+        let keyword = self.previous().clone();
+
+        let value = if self.check(&TokenType::Semicolon) {
+            None
+        } else {
+            Some(self.expression()?)
+        };
+
+        self.consume(&TokenType::Semicolon, "Expect `;` after return.")?;
+
+        Ok(Stmt::Return { keyword, value })
     }
 
     fn while_statement(&mut self) -> Result<Stmt> {

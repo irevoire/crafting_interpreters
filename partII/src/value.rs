@@ -2,7 +2,7 @@ use anyhow::anyhow;
 
 use std::{fmt::Display, rc::Rc};
 
-use crate::callable::Callable;
+use crate::{callable::Callable, error::RuntimeError};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -11,6 +11,12 @@ pub enum Value {
     Number(f64),
     Bool(bool),
     Nil,
+}
+
+impl Default for Value {
+    fn default() -> Self {
+        Self::Nil
+    }
 }
 
 impl PartialEq for Value {
@@ -42,7 +48,7 @@ impl Value {
         matches!(self, Self::Nil)
     }
 
-    pub fn map_number(self, mut f: impl FnMut(f64) -> f64) -> Result<Self, anyhow::Error> {
+    pub fn map_number(self, mut f: impl FnMut(f64) -> f64) -> Result<Self, RuntimeError> {
         Ok(Self::Number(f(self.number()?)))
     }
 
@@ -58,31 +64,31 @@ impl Value {
         matches!(self, Self::Callable { .. })
     }
 
-    pub fn number(self) -> Result<f64, anyhow::Error> {
+    pub fn number(self) -> Result<f64, RuntimeError> {
         match self {
             Self::Number(n) => Ok(n),
-            _ => Err(anyhow!("Expected `number` but instead got {:?}", self)),
+            _ => Err(anyhow!("Expected `number` but instead got {:?}", self))?,
         }
     }
 
-    pub fn string(self) -> Result<String, anyhow::Error> {
+    pub fn string(self) -> Result<String, RuntimeError> {
         match self {
             Self::String(s) => Ok(s),
-            _ => Err(anyhow!("Expected `string` but instead got {:?}", self)),
+            _ => Err(anyhow!("Expected `string` but instead got {:?}", self))?,
         }
     }
 
-    pub fn bool(self) -> Result<bool, anyhow::Error> {
+    pub fn bool(self) -> Result<bool, RuntimeError> {
         match self {
             Self::Bool(b) => Ok(b),
-            _ => Err(anyhow!("Expected `bool` but instead got {:?}", self)),
+            _ => Err(anyhow!("Expected `bool` but instead got {:?}", self))?,
         }
     }
 
-    pub fn nil(self) -> Result<(), anyhow::Error> {
+    pub fn nil(self) -> Result<(), RuntimeError> {
         match self {
             Self::Nil => Ok(()),
-            _ => Err(anyhow!("Expected `nil` but instead got {:?}", self)),
+            _ => Err(anyhow!("Expected `nil` but instead got {:?}", self))?,
         }
     }
 }
