@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::anyhow;
 
-use crate::{callable::Callable, environment::Environment, error::RuntimeError, value::Value};
+use crate::{callable::Callable, error::RuntimeError, interpreter::Interpreter, value::Value};
 
 #[derive(Debug)]
 pub struct Clock {}
@@ -18,7 +18,11 @@ impl Clock {
 }
 
 impl Callable for Clock {
-    fn call(&self, _env: &mut Environment, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+    fn call(
+        &self,
+        _interpreter: &mut Interpreter,
+        arguments: Vec<Value>,
+    ) -> Result<Value, RuntimeError> {
         if !arguments.is_empty() {
             return Err(anyhow!("`clock` expect no argument."))?;
         }

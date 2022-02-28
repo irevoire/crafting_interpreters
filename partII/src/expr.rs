@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{token::Token, value::Value};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
     Assign {
         name: Token,

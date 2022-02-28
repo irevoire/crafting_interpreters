@@ -9,6 +9,7 @@ mod expr;
 mod interpreter;
 mod native_functions;
 mod parser;
+mod resolver;
 mod scanner;
 mod stmt;
 mod token;
@@ -20,6 +21,7 @@ use std::{
 };
 
 use interpreter::Interpreter;
+use resolver::Resolver;
 use scanner::Scanner;
 
 use crate::error::{Result, SetupError};
@@ -78,6 +80,9 @@ fn run(input: String, interpreter: &mut Interpreter) -> Result<()> {
     let tokens = scanner.scan_tokens()?;
     let parser = Parser::new(tokens);
     let stmts = parser.parse()?;
+
+    let mut resolver = Resolver::new(interpreter);
+    resolver.resolve(&stmts)?;
 
     Ok(interpreter.interpret(stmts)?)
 }

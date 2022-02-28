@@ -22,15 +22,40 @@ impl Default for Value {
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Callable { .. }, _) | (_, Self::Callable { .. }) => {
-                // TODO: we should check if it point to the exact same location
-                panic!("You can't compare functions")
-            }
+            (Self::Callable(left), Self::Callable(right)) => Rc::as_ptr(left) == Rc::as_ptr(right),
             (Self::String(left), Self::String(right)) => left == right,
             (Self::Number(left), Self::Number(right)) => left == right,
             (Self::Bool(left), Self::Bool(right)) => left == right,
             (Self::Nil, Self::Nil) => true,
             _ => false,
+        }
+    }
+}
+
+impl Eq for Value {}
+
+impl std::hash::Hash for Value {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Value::Callable(fun) => {
+                state.write_u8(0);
+                Rc::as_ptr(fun).hash(state);
+            }
+            Value::String(s) => {
+                state.write_u8(1);
+                s.hash(state);
+            }
+            Value::Number(n) => {
+                state.write_u8(2);
+                n.to_bits().hash(state);
+            }
+            Value::Bool(b) => {
+                state.write_u8(3);
+                b.hash(state);
+            }
+            Value::Nil => {
+                state.write_u8(4);
+            }
         }
     }
 }

@@ -1,25 +1,34 @@
 use std::rc::Rc;
 
 use crate::{
-    environment::Environment, error::RuntimeError, stmt::Stmt, token::Token, value::Value,
+    environment::Environment, error::RuntimeError, interpreter::Interpreter, stmt::Stmt,
+    token::Token, value::Value,
 };
 
 use anyhow::anyhow;
 
 pub trait Callable: std::fmt::Debug {
-    fn call(&self, env: &mut Environment, arguments: Vec<Value>) -> Result<Value, RuntimeError>;
+    fn call(
+        &self,
+        interpreter: &mut Interpreter,
+        arguments: Vec<Value>,
+    ) -> Result<Value, RuntimeError>;
     fn arity(&self) -> usize;
 }
 
 impl Callable for Value {
-    fn call(&self, env: &mut Environment, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+    fn call(
+        &self,
+        interpreter: &mut Interpreter,
+        arguments: Vec<Value>,
+    ) -> Result<Value, RuntimeError> {
         match self {
             Self::Callable(fun) if fun.arity() != arguments.len() => Err(anyhow!(
                 "Expected {} arguments but got {}.",
                 fun.arity(),
                 arguments.len()
             ))?,
-            Self::Callable(fun) => fun.call(env, arguments),
+            Self::Callable(fun) => fun.call(interpreter, arguments),
             _ => Err(anyhow!("Can only call functions or classes."))?,
         }
     }
@@ -48,7 +57,11 @@ impl Function {
 }
 
 impl Callable for Function {
-    fn call(&self, env: &mut Environment, arguments: Vec<Value>) -> Result<Value, RuntimeError> {
+    fn call(
+        &self,
+        interpreter: &mut Interpreter,
+        arguments: Vec<Value>,
+    ) -> Result<Value, RuntimeError> {
         if self.params.len() != arguments.len() {
             return Err(anyhow!(
                 "Expected {} arguments but got {}.",
@@ -57,20 +70,21 @@ impl Callable for Function {
             ))?;
         }
 
-        let previous_env = std::mem::take(env);
-        env.enclose(previous_env);
+        let previous_env = std::mem::take(&mut interpreter.env);
+        interpreter.env.enclose(previous_env);
 
         for (param, arg) in self.params.iter().zip(arguments) {
-            env.define(param.lexeme.to_string(), arg);
+            println!("Inserting {} in the env", param.lexeme);
+            interpreter.define(param.lexeme.to_string(), arg);
         }
 
-        let result = match Stmt::Block(self.body.clone()).evaluate(env) {
+        let result = match Stmt::Block(self.body.clone()).evaluate(interpreter) {
             Ok(()) => Ok(Value::Nil),
             Err(RuntimeError::Return(value)) => Ok(value),
             Err(e) => Err(e),
         };
 
-        *env = std::mem::take(env).destroy().unwrap();
+        interpreter.env = std::mem::take(&mut interpreter.env).destroy().unwrap();
 
         result
     }

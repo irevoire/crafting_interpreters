@@ -1,0 +1,21 @@
+print "Hello";
+
+var a;
+
+print a;
+
+a = 2;
+
+print a;
+
+var b = 45;
+
+print b;
+
+print a + b;
+
+{
+    var a = 5;
+    print a + b;
+}
+
