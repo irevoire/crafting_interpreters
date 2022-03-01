@@ -4,12 +4,12 @@ use crate::{callable::Function, expr::Expr, interpreter::Interpreter, stmt::Stmt
 
 use anyhow::Result;
 
-type Scope = HashMap<String, bool>;
+type Scope<'a> = HashMap<&'a str, bool>;
 
 #[derive(Debug)]
 pub struct Resolver<'a> {
     pub interpreter: &'a mut Interpreter,
-    pub scopes: Vec<Scope>,
+    pub scopes: Vec<Scope<'a>>,
 }
 
 impl<'a> Resolver<'a> {
@@ -20,7 +20,7 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    pub fn resolve(&mut self, stmts: &[Stmt]) -> Result<()> {
+    pub fn resolve(&mut self, stmts: &'a [Stmt]) -> Result<()> {
         self.resolve_stmts(stmts)
     }
 
@@ -32,36 +32,36 @@ impl<'a> Resolver<'a> {
         self.scopes.pop();
     }
 
-    fn declare(&mut self, name: &Token) {
+    fn declare(&mut self, name: &'a Token) {
         if let Some(scope) = self.scopes.last_mut() {
-            scope.insert(name.lexeme.clone(), false);
+            scope.insert(&name.lexeme, false);
         }
     }
 
-    fn define(&mut self, name: &Token) {
+    fn define(&mut self, name: &'a Token) {
         if let Some(scope) = self.scopes.last_mut() {
-            scope.insert(name.lexeme.clone(), true);
+            scope.insert(&name.lexeme, true);
         }
     }
 
-    fn resolve_stmts(&mut self, statements: &[Stmt]) -> Result<()> {
+    fn resolve_stmts(&mut self, statements: &'a [Stmt]) -> Result<()> {
         for statement in statements {
             statement.resolve(self)?;
         }
         Ok(())
     }
 
-    fn resolve_local(&mut self, expr: &Expr, name: &Token) -> Result<()> {
+    fn resolve_local(&mut self, expr: &'a Expr, name: &'a Token) -> Result<()> {
         for (idx, scope) in self.scopes.iter().enumerate() {
-            if scope.contains_key(&name.lexeme) {
-                self.interpreter.resolve(&expr, self.scopes.len() - idx - 1);
+            if scope.contains_key(&name.lexeme as &str) {
+                self.interpreter.resolve(expr, self.scopes.len() - idx - 1);
                 return Ok(());
             }
         }
         Ok(())
     }
 
-    fn resolve_function(&mut self, function: &Function) -> Result<()> {
+    fn resolve_function(&mut self, function: &'a Function) -> Result<()> {
         self.begin_scope();
         for param in &function.params {
             self.declare(param);
@@ -69,7 +69,6 @@ impl<'a> Resolver<'a> {
         }
 
         self.resolve_stmts(&function.body)?;
-        dbg!(&self);
         self.end_scope();
         Ok(())
     }
@@ -87,8 +86,8 @@ impl<'a> Resolver<'a> {
     }
 }
 
-impl Stmt {
-    fn resolve(&self, resolver: &mut Resolver) -> Result<()> {
+impl<'a> Stmt {
+    fn resolve(&'a self, resolver: &mut Resolver<'a>) -> Result<()> {
         match self {
             Stmt::Block(stmts) => {
                 resolver.begin_scope();
@@ -135,8 +134,8 @@ impl Stmt {
     }
 }
 
-impl Expr {
-    fn resolve(&self, resolver: &mut Resolver) -> Result<()> {
+impl<'a> Expr {
+    fn resolve(&'a self, resolver: &mut Resolver<'a>) -> Result<()> {
         match self {
             Expr::Assign { name, value } => {
                 value.resolve(resolver)?;

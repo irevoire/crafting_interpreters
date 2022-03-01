@@ -45,7 +45,7 @@ impl Callable for Value {
 pub struct Function {
     pub name: Token,
     pub params: Vec<Token>,
-    pub body: Vec<Stmt>,
+    pub body: Rc<Vec<Stmt>>,
 }
 
 impl Function {
@@ -74,7 +74,6 @@ impl Callable for Function {
         interpreter.env.enclose(previous_env);
 
         for (param, arg) in self.params.iter().zip(arguments) {
-            println!("Inserting {} in the env", param.lexeme);
             interpreter.define(param.lexeme.to_string(), arg);
         }
 

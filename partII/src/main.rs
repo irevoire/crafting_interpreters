@@ -84,5 +84,5 @@ fn run(input: String, interpreter: &mut Interpreter) -> Result<()> {
     let mut resolver = Resolver::new(interpreter);
     resolver.resolve(&stmts)?;
 
-    Ok(interpreter.interpret(stmts)?)
+    Ok(interpreter.interpret(&stmts)?)
 }

@@ -77,9 +77,6 @@ impl Environment {
     }
 
     pub fn get_at(&self, distance: usize, name: &Token) -> Result<&Value, RuntimeError> {
-        if name.lexeme == "n" {
-            dbg!(&self.values);
-        }
         if distance == 0 {
             self.get(name)
         } else {

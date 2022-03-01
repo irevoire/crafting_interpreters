@@ -32,8 +32,7 @@ impl Interpreter {
         interpreter
     }
 
-    pub fn interpret(&mut self, stmts: Vec<Stmt>) -> std::result::Result<(), RuntimeError> {
-        dbg!(&self.locals);
+    pub fn interpret(&mut self, stmts: &[Stmt]) -> std::result::Result<(), RuntimeError> {
         for stmt in stmts {
             stmt.evaluate(self)?;
         }
@@ -41,18 +40,14 @@ impl Interpreter {
     }
 
     fn lookup_variable(&mut self, name: &Token, expr: &Expr) -> Result<&Value> {
-        println!("Lookup {name} at {:?}", expr as *const Expr);
         if let Some(distance) = self.locals.get(&(expr as *const Expr)) {
-            println!("at a distance of {distance}");
             self.get_at(*distance, name)
         } else {
-            println!("It's a global variable");
             self.globals().get(name)
         }
     }
 
     pub fn resolve(&mut self, expr: &Expr, depth: usize) {
-        println!("Inserting {expr} at {:?}", expr as *const Expr);
         self.locals.insert(expr, depth);
     }
 }
@@ -78,7 +73,7 @@ impl Stmt {
                 let previous_env = std::mem::take(&mut interpreter.env);
                 interpreter.enclose(previous_env);
 
-                for stmt in stmts {
+                for stmt in stmts.iter() {
                     match stmt.evaluate(interpreter) {
                         Ok(_) => (),
                         Err(e) => {
@@ -118,8 +113,8 @@ impl Stmt {
             }
             Stmt::Var { name, initializer } => {
                 let value = initializer
-                    .clone()
-                    .unwrap_or(Expr::Literal { value: Value::Nil })
+                    .as_ref()
+                    .unwrap_or(&Expr::Literal { value: Value::Nil })
                     .evaluate(interpreter)?;
                 interpreter.define(name.lexeme.clone(), value);
             }

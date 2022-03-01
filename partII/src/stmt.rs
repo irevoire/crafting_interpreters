@@ -1,8 +1,10 @@
+use std::rc::Rc;
+
 use crate::{callable::Function, expr::Expr, token::Token};
 
 #[derive(Debug, Clone)]
 pub enum Stmt {
-    Block(Vec<Stmt>),
+    Block(Rc<Vec<Stmt>>),
     Expression(Expr),
     Function(Function),
     If {

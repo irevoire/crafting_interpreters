@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     error::{ParserError, ParserErrors},
     expr::Expr,
@@ -85,7 +87,7 @@ impl Parser {
         Ok(Stmt::Function(crate::callable::Function {
             name,
             params,
-            body,
+            body: Rc::new(body),
         }))
     }
 
@@ -117,7 +119,7 @@ impl Parser {
         } else if self.follow([TokenType::For]) {
             self.for_statement()
         } else if self.follow([TokenType::LeftBrace]) {
-            Ok(Stmt::Block(self.block()?))
+            Ok(Stmt::Block(Rc::new(self.block()?)))
         } else {
             self.expression_statement()
         }
@@ -209,7 +211,7 @@ impl Parser {
 
         // desugar the for loop
         if let Some(increment) = increment {
-            body = Stmt::Block(vec![body, Stmt::Expression(increment)]);
+            body = Stmt::Block(Rc::new(vec![body, Stmt::Expression(increment)]));
         }
 
         let condition = condition.unwrap_or(Expr::literal(true));
@@ -220,7 +222,7 @@ impl Parser {
         };
 
         if let Some(initializer) = initializer {
-            body = Stmt::Block(vec![initializer, body]);
+            body = Stmt::Block(Rc::new(vec![initializer, body]));
         }
 
         Ok(body)
