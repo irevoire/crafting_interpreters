@@ -2,14 +2,21 @@ use std::collections::HashMap;
 
 use crate::{callable::Function, expr::Expr, interpreter::Interpreter, stmt::Stmt, token::Token};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 type Scope<'a> = HashMap<&'a str, bool>;
 
 #[derive(Debug)]
 pub struct Resolver<'a> {
-    pub interpreter: &'a mut Interpreter,
-    pub scopes: Vec<Scope<'a>>,
+    interpreter: &'a mut Interpreter,
+    scopes: Vec<Scope<'a>>,
+    current_function: FunctionType,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FunctionType {
+    None,
+    Function,
 }
 
 impl<'a> Resolver<'a> {
@@ -17,6 +24,7 @@ impl<'a> Resolver<'a> {
         Self {
             interpreter,
             scopes: Vec::new(),
+            current_function: FunctionType::None,
         }
     }
 
@@ -32,10 +40,14 @@ impl<'a> Resolver<'a> {
         self.scopes.pop();
     }
 
-    fn declare(&mut self, name: &'a Token) {
+    fn declare(&mut self, name: &'a Token) -> Result<()> {
         if let Some(scope) = self.scopes.last_mut() {
+            if scope.contains_key(name.lexeme.as_str()) {
+                return Err(anyhow!("Already a variable with this name in this scope."))?;
+            }
             scope.insert(&name.lexeme, false);
         }
+        Ok(())
     }
 
     fn define(&mut self, name: &'a Token) {
@@ -61,15 +73,19 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn resolve_function(&mut self, function: &'a Function) -> Result<()> {
+    fn resolve_function(&mut self, function: &'a Function, ty: FunctionType) -> Result<()> {
+        let enclosing_function = self.current_function;
+        self.current_function = ty;
+
         self.begin_scope();
         for param in &function.params {
-            self.declare(param);
+            self.declare(param)?;
             self.define(param);
         }
 
         self.resolve_stmts(&function.body)?;
         self.end_scope();
+        self.current_function = enclosing_function;
         Ok(())
     }
 
@@ -97,9 +113,9 @@ impl<'a> Stmt {
             }
             Stmt::Expression(expr) => expr.resolve(resolver),
             Stmt::Function(function @ Function { name, .. }) => {
-                resolver.declare(name);
+                resolver.declare(name)?;
                 resolver.define(name);
-                resolver.resolve_function(function)
+                resolver.resolve_function(function, FunctionType::Function)
             }
             Stmt::If {
                 condition,
@@ -116,9 +132,14 @@ impl<'a> Stmt {
             Stmt::Print(expr) => expr.resolve(resolver),
             Stmt::Return {
                 value: Some(value), ..
-            } => value.resolve(resolver),
+            } => {
+                if resolver.current_function == FunctionType::None {
+                    return Err(anyhow!("Can't return from top-level code."))?;
+                }
+                value.resolve(resolver)
+            }
             Stmt::Var { name, initializer } => {
-                resolver.declare(name);
+                resolver.declare(name)?;
                 if let Some(initializer) = initializer {
                     initializer.resolve(resolver)?;
                 }
