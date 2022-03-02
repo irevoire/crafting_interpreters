@@ -1,10 +1,12 @@
 use std::{
     collections::HashMap,
     ops::{Deref, DerefMut},
+    rc::Rc,
 };
 
 use crate::{
     callable::Callable,
+    class::Class,
     environment::Environment,
     error::RuntimeError,
     expr::Expr,
@@ -84,6 +86,12 @@ impl Stmt {
                     }
                 }
                 interpreter.env = std::mem::take(&mut interpreter.env).destroy().unwrap();
+            }
+            Stmt::Class { name, .. } => {
+                interpreter.define(name.lexeme.clone(), Value::Nil);
+                let class = Class::new(name.lexeme.clone());
+                let class = Rc::new(class) as Rc<dyn Callable>;
+                interpreter.assign(name, class.into())?;
             }
             Stmt::Expression(expr) => drop(expr.evaluate(interpreter)?),
             Stmt::Function(fun) => fun.evaluate(interpreter)?,

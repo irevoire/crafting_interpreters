@@ -1,0 +1,13 @@
+class DevonShireCream {
+    serveOn() {
+        return "Scones";
+    }
+}
+
+print DevonShireCream;
+
+
+class Bagel {}
+var bagel = Bagel();
+
+print bagel;

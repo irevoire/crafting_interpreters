@@ -5,6 +5,10 @@ use crate::{callable::Function, expr::Expr, token::Token};
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Block(Rc<Vec<Stmt>>),
+    Class {
+        name: Token,
+        methods: Vec<Function>,
+    },
     Expression(Expr),
     Function(Function),
     If {

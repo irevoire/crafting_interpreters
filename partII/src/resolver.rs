@@ -105,6 +105,11 @@ impl<'a> Resolver<'a> {
 impl<'a> Stmt {
     fn resolve(&'a self, resolver: &mut Resolver<'a>) -> Result<()> {
         match self {
+            Stmt::Class { name, .. } => {
+                resolver.declare(name)?;
+                resolver.define(name);
+                Ok(())
+            }
             Stmt::Block(stmts) => {
                 resolver.begin_scope();
                 resolver.resolve_stmts(&stmts)?;

@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use crate::{
+    callable,
     error::{ParserError, ParserErrors},
     expr::Expr,
     stmt::Stmt,
@@ -40,8 +41,10 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Stmt> {
-        let result = if self.follow([TokenType::Fun]) {
-            self.function("function")
+        let result = if self.follow([TokenType::Class]) {
+            self.class_declaration()
+        } else if self.follow([TokenType::Fun]) {
+            self.function_declaration()
         } else if self.follow([TokenType::Var]) {
             self.var_declaration()
         } else {
@@ -55,7 +58,25 @@ impl Parser {
         result
     }
 
-    fn function(&mut self, kind: &str) -> Result<Stmt> {
+    fn class_declaration(&mut self) -> Result<Stmt> {
+        let name = self.consume_ident(format!("Expect class name."))?;
+        self.consume(&TokenType::LeftBrace, "Expect `{` before class body.")?;
+
+        let mut methods = Vec::new();
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
+            methods.push(self.function("method")?);
+        }
+
+        self.consume(&TokenType::RightBrace, "Expect `}` after class body.")?;
+
+        Ok(Stmt::Class { name, methods })
+    }
+
+    fn function_declaration(&mut self) -> Result<Stmt> {
+        Ok(Stmt::Function(self.function("function")?))
+    }
+
+    fn function(&mut self, kind: &str) -> Result<callable::Function> {
         let name = self.consume_ident(format!("Expect {kind} name."))?;
 
         self.consume(
@@ -84,11 +105,11 @@ impl Parser {
 
         let body = self.block()?;
 
-        Ok(Stmt::Function(crate::callable::Function {
+        Ok(callable::Function {
             name,
             params,
             body: Rc::new(body),
-        }))
+        })
     }
 
     fn var_declaration(&mut self) -> Result<Stmt> {

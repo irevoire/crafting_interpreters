@@ -3,9 +3,11 @@
 
 mod ast_printer;
 mod callable;
+mod class;
 mod environment;
 mod error;
 mod expr;
+mod instance;
 mod interpreter;
 mod native_functions;
 mod parser;

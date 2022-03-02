@@ -2,11 +2,12 @@ use anyhow::anyhow;
 
 use std::{fmt::Display, rc::Rc};
 
-use crate::{callable::Callable, error::RuntimeError};
+use crate::{callable::Callable, error::RuntimeError, instance::Instance};
 
 #[derive(Debug, Clone)]
 pub enum Value {
     Callable(Rc<dyn Callable>),
+    Instance(Instance),
     String(String),
     Number(f64),
     Bool(bool),
@@ -34,6 +35,7 @@ impl PartialEq for Value {
 
 impl Eq for Value {}
 
+/* I think this was uneeded
 impl std::hash::Hash for Value {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
@@ -59,6 +61,7 @@ impl std::hash::Hash for Value {
         }
     }
 }
+*/
 
 impl Value {
     pub fn is_truthy(&self) -> bool {
@@ -148,12 +151,19 @@ impl From<Rc<dyn Callable>> for Value {
     }
 }
 
+impl From<Instance> for Value {
+    fn from(instance: Instance) -> Self {
+        Self::Instance(instance)
+    }
+}
+
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Callable { .. } => write!(f, "fun"),
+            Self::Instance(i) => write!(f, "{}", i),
             Self::String(s) => write!(f, "{}", s),
-            Self::Number(s) => write!(f, "{}", s),
+            Self::Number(n) => write!(f, "{}", n),
             Self::Bool(b) => write!(f, "{}", b),
             Self::Nil => write!(f, "nil"),
         }
