@@ -284,6 +284,12 @@ impl Parser {
                     name,
                     value: Box::new(value),
                 });
+            } else if let Expr::Get { object, name } = expr {
+                return Ok(Expr::Set {
+                    object,
+                    name,
+                    value: Box::new(value),
+                });
             }
 
             return Err(ParserError::InvalidAssignmentTarget(equals));
@@ -386,6 +392,13 @@ impl Parser {
         loop {
             if self.follow([TokenType::LeftParen]) {
                 expr = self.finish_call(expr)?;
+            }
+            if self.follow([TokenType::Dot]) {
+                let name = self.consume_ident("Expect property name aften `.`.")?;
+                expr = Expr::Get {
+                    name,
+                    object: Box::new(expr),
+                };
             } else {
                 break Ok(expr);
             }

@@ -11,3 +11,7 @@ class Bagel {}
 var bagel = Bagel();
 
 print bagel;
+
+bagel.topping = "sugar";
+
+print bagel.topping;

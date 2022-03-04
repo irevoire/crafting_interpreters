@@ -182,6 +182,13 @@ impl Expr {
 
                 callee.call(interpreter, arguments)
             }
+            Expr::Get { object, name } => {
+                let object = object.evaluate(interpreter)?;
+                match object {
+                    Value::Instance(object) => object.lock().unwrap().get(name).cloned(),
+                    _ => Err(anyhow!("Only object have properties."))?,
+                }
+            }
             Expr::Grouping { expression } => expression.evaluate(interpreter),
             Expr::Literal { value } => Ok(value.clone()),
             Expr::Logical {
@@ -202,6 +209,21 @@ impl Expr {
                 }
 
                 right.evaluate(interpreter)
+            }
+            Expr::Set {
+                object,
+                name,
+                value,
+            } => {
+                let object = object.evaluate(interpreter)?;
+                match object {
+                    Value::Instance(object) => {
+                        let value = value.evaluate(interpreter)?;
+                        object.lock().unwrap().set(name, value.clone());
+                        Ok(value)
+                    }
+                    _ => Err(anyhow!("Only instances have fields."))?,
+                }
             }
             Expr::Unary { operator, right } => match operator.ty {
                 TokenType::Bang => Ok((right.evaluate(interpreter)?.is_falsy()).into()),

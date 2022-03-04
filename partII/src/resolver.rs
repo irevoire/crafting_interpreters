@@ -160,8 +160,8 @@ impl<'a> Stmt {
     }
 }
 
-impl<'a> Expr {
-    fn resolve(&'a self, resolver: &mut Resolver<'a>) -> Result<()> {
+impl Expr {
+    fn resolve<'a>(&'a self, resolver: &mut Resolver<'a>) -> Result<()> {
         match self {
             Expr::Assign { name, value } => {
                 value.resolve(resolver)?;
@@ -180,11 +180,16 @@ impl<'a> Expr {
                 }
                 Ok(())
             }
+            Expr::Get { object, .. } => object.resolve(resolver),
             Expr::Grouping { expression } => expression.resolve(resolver),
             Expr::Literal { .. } => Ok(()),
             Expr::Logical { left, right, .. } => {
                 left.resolve(resolver)?;
                 right.resolve(resolver)
+            }
+            Expr::Set { object, value, .. } => {
+                value.resolve(resolver)?;
+                object.resolve(resolver)
             }
             Expr::Variable { name } => {
                 if !resolver.is_empty() && resolver.get(&name.lexeme) == Some(false) {

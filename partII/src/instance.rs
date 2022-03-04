@@ -1,15 +1,32 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
-use crate::class::Class;
+use crate::{class::Class, error::RuntimeError, token::Token, value::Value};
 
-#[derive(Debug, Clone)]
+use anyhow::anyhow;
+
+#[derive(Debug)]
 pub struct Instance {
     class: Class,
+    fields: HashMap<String, Value>,
 }
 
 impl Instance {
     pub fn new(class: Class) -> Self {
-        Self { class }
+        Self {
+            class,
+            fields: HashMap::default(),
+        }
+    }
+
+    pub fn get(&self, name: &Token) -> Result<&Value, RuntimeError> {
+        Ok(self
+            .fields
+            .get(&name.lexeme)
+            .ok_or(anyhow!("Undefined property `{}`.", name.lexeme))?)
+    }
+
+    pub fn set(&mut self, name: &Token, value: Value) {
+        self.fields.insert(name.lexeme.clone(), value);
     }
 }
 

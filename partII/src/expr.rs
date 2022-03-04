@@ -18,6 +18,10 @@ pub enum Expr {
         paren: Token,
         arguments: Vec<Expr>,
     },
+    Get {
+        object: Box<Expr>,
+        name: Token,
+    },
     Grouping {
         expression: Box<Expr>,
     },
@@ -28,6 +32,11 @@ pub enum Expr {
         left: Box<Expr>,
         operator: Token,
         right: Box<Expr>,
+    },
+    Set {
+        object: Box<Expr>,
+        name: Token,
+        value: Box<Expr>,
     },
     Variable {
         name: Token,
@@ -89,6 +98,7 @@ impl Display for Expr {
             Self::Assign { name, .. } => write!(f, "assign {}", name.lexeme),
             Self::Binary { operator, .. } => write!(f, "{}", operator.lexeme),
             Self::Call { .. } => write!(f, "call"),
+            Self::Get { .. } | Self::Set { .. } => write!(f, "."),
             Self::Grouping { .. } => write!(f, "grouping"),
             Self::Logical { operator, .. } => write!(f, "{}", operator.lexeme),
             Self::Literal { value } => write!(f, "{}", value),
