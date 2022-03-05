@@ -17,6 +17,7 @@ pub struct Resolver<'a> {
 enum FunctionType {
     None,
     Function,
+    Method,
 }
 
 impl<'a> Resolver<'a> {
@@ -105,9 +106,14 @@ impl<'a> Resolver<'a> {
 impl<'a> Stmt {
     fn resolve(&'a self, resolver: &mut Resolver<'a>) -> Result<()> {
         match self {
-            Stmt::Class { name, .. } => {
+            Stmt::Class { name, methods } => {
                 resolver.declare(name)?;
                 resolver.define(name);
+
+                for method in methods {
+                    let declaration = FunctionType::Method;
+                    resolver.resolve_function(method, declaration)?;
+                }
                 Ok(())
             }
             Stmt::Block(stmts) => {

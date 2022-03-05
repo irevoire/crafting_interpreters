@@ -1,15 +1,23 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
-use crate::{callable::Callable, instance::Instance};
+use crate::{
+    callable::{Callable, Function},
+    instance::Instance,
+};
 
 #[derive(Debug, Clone)]
 pub struct Class {
     pub name: String,
+    pub methods: HashMap<String, Function>,
 }
 
 impl Class {
-    pub fn new(name: String) -> Self {
-        Class { name }
+    pub fn new(name: String, methods: HashMap<String, Function>) -> Self {
+        Class { name, methods }
+    }
+
+    pub fn find_method(&self, name: &str) -> Option<&Function> {
+        self.methods.get(name)
     }
 }
 

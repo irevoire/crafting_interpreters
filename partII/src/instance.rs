@@ -18,11 +18,14 @@ impl Instance {
         }
     }
 
-    pub fn get(&self, name: &Token) -> Result<&Value, RuntimeError> {
-        Ok(self
-            .fields
-            .get(&name.lexeme)
-            .ok_or(anyhow!("Undefined property `{}`.", name.lexeme))?)
+    pub fn get(&self, name: &Token) -> Result<Value, RuntimeError> {
+        if let Some(field) = self.fields.get(&name.lexeme) {
+            Ok(field.clone())
+        } else if let Some(method) = self.class.find_method(&name.lexeme) {
+            Ok(method.to_value())
+        } else {
+            Err(anyhow!("Undefined property `{}`.", name.lexeme))?
+        }
     }
 
     pub fn set(&mut self, name: &Token, value: Value) {

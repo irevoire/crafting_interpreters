@@ -15,3 +15,11 @@ print bagel;
 bagel.topping = "sugar";
 
 print bagel.topping;
+
+class Bacon {
+    eat() {
+        print "Crunch crunch crunch!";
+    }
+}
+
+Bacon().eat();

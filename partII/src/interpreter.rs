@@ -87,9 +87,15 @@ impl Stmt {
                 }
                 interpreter.env = std::mem::take(&mut interpreter.env).destroy().unwrap();
             }
-            Stmt::Class { name, .. } => {
+            Stmt::Class { name, methods } => {
                 interpreter.define(name.lexeme.clone(), Value::Nil);
-                let class = Class::new(name.lexeme.clone());
+
+                let methods = methods
+                    .iter()
+                    .map(|method| (method.name.lexeme.clone(), method.clone()))
+                    .collect();
+
+                let class = Class::new(name.lexeme.clone(), methods);
                 let class = Rc::new(class) as Rc<dyn Callable>;
                 interpreter.assign(name, class.into())?;
             }
@@ -185,7 +191,7 @@ impl Expr {
             Expr::Get { object, name } => {
                 let object = object.evaluate(interpreter)?;
                 match object {
-                    Value::Instance(object) => object.lock().unwrap().get(name).cloned(),
+                    Value::Instance(object) => object.lock().unwrap().get(name),
                     _ => Err(anyhow!("Only object have properties."))?,
                 }
             }

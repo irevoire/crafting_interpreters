@@ -50,9 +50,12 @@ pub struct Function {
 
 impl Function {
     pub fn evaluate(&self, env: &mut Environment) -> Result<(), RuntimeError> {
-        let fun = Rc::new(self.clone()) as Rc<dyn Callable>;
-        env.define(self.name.lexeme.to_string(), fun.into());
+        env.define(self.name.lexeme.to_string(), self.to_value());
         Ok(())
+    }
+
+    pub fn to_value(&self) -> Value {
+        (Rc::new(self.clone()) as Rc<dyn Callable>).into()
     }
 }
 
