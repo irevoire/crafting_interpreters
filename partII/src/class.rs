@@ -9,11 +9,20 @@ use crate::{
 pub struct Class {
     pub name: String,
     pub methods: HashMap<String, Function>,
+    pub superclass: Option<Box<Class>>,
 }
 
 impl Class {
-    pub fn new(name: String, methods: HashMap<String, Function>) -> Self {
-        Class { name, methods }
+    pub fn new(
+        name: String,
+        methods: HashMap<String, Function>,
+        superclass: Option<Class>,
+    ) -> Self {
+        Class {
+            name,
+            methods,
+            superclass: superclass.map(Box::new),
+        }
     }
 
     pub fn find_method(&self, name: &str) -> Option<&Function> {

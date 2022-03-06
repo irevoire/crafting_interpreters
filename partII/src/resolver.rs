@@ -113,12 +113,22 @@ impl<'a> Resolver<'a> {
 impl<'a> Stmt {
     fn resolve(&'a self, resolver: &mut Resolver<'a>) -> Result<()> {
         match self {
-            Stmt::Class { name, methods } => {
+            Stmt::Class {
+                name,
+                superclass,
+                methods,
+            } => {
                 let enclosing_class = resolver.current_class;
                 resolver.current_class = ClassType::Class;
 
                 resolver.declare(name)?;
                 resolver.define(name);
+                if let Some(superclass) = superclass {
+                    if name.lexeme == superclass.unwrap_variable().lexeme {
+                        return Err(anyhow!("A class can't inherit from itself."));
+                    }
+                    superclass.resolve(resolver)?;
+                }
 
                 resolver.begin_scope();
                 resolver.scopes.last_mut().unwrap().insert("this", true);

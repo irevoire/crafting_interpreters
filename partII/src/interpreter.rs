@@ -91,7 +91,21 @@ impl Stmt {
                 }
                 interpreter.env = std::mem::take(&mut interpreter.env).destroy().unwrap();
             }
-            Stmt::Class { name, methods } => {
+            Stmt::Class {
+                name,
+                superclass,
+                methods,
+            } => {
+                let superclass = superclass
+                    .as_ref()
+                    .map(|superclass| -> Result<_> {
+                        let superclass = superclass.evaluate(interpreter)?;
+                        match superclass {
+                            Value::Class(class) => Ok(class),
+                            _ => Err(anyhow!("Superclass must be a class"))?,
+                        }
+                    })
+                    .transpose()?;
                 interpreter.define(name.lexeme.clone(), Value::Nil);
 
                 let methods = methods
@@ -99,8 +113,7 @@ impl Stmt {
                     .map(|method| (method.name.lexeme.clone(), method.clone()))
                     .collect();
 
-                let class = Class::new(name.lexeme.clone(), methods);
-                let class = Rc::new(class) as Rc<dyn Callable>;
+                let class = Class::new(name.lexeme.clone(), methods, superclass);
                 interpreter.assign(name, class.into())?;
             }
             Stmt::Expression(expr) => drop(expr.evaluate(interpreter)?),

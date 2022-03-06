@@ -85,6 +85,13 @@ impl Expr {
             right: Box::new(right),
         }
     }
+
+    pub fn unwrap_variable(&self) -> &Token {
+        match self {
+            Self::Variable { name } => name,
+            expr => panic!("Called unwrap variable on a {:#?}.", expr),
+        }
+    }
 }
 
 impl Default for Expr {

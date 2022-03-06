@@ -36,6 +36,9 @@ impl Callable for Value {
             Self::Callable(fun) => unsafe {
                 Rc::get_mut_unchecked(fun).call(interpreter, arguments)
             },
+            // Should I copy paste the code above?
+            Self::Class(class) => Value::Callable(Rc::new(class.clone()) as Rc<dyn Callable>)
+                .call(interpreter, arguments),
             _ => Err(anyhow!("Can only call functions or classes."))?,
         }
     }

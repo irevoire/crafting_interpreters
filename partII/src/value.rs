@@ -4,6 +4,7 @@ use std::{fmt::Display, rc::Rc};
 
 use crate::{
     callable::{Callable, Function},
+    class::Class,
     error::RuntimeError,
     instance::Instance,
 };
@@ -11,6 +12,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub enum Value {
     Callable(Rc<dyn Callable>),
+    Class(Class),
     Instance(Rc<Instance>),
     String(String),
     Number(f64),
@@ -38,34 +40,6 @@ impl PartialEq for Value {
 }
 
 impl Eq for Value {}
-
-/* I think this was uneeded
-impl std::hash::Hash for Value {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        match self {
-            Value::Callable(fun) => {
-                state.write_u8(0);
-                Rc::as_ptr(fun).hash(state);
-            }
-            Value::String(s) => {
-                state.write_u8(1);
-                s.hash(state);
-            }
-            Value::Number(n) => {
-                state.write_u8(2);
-                n.to_bits().hash(state);
-            }
-            Value::Bool(b) => {
-                state.write_u8(3);
-                b.hash(state);
-            }
-            Value::Nil => {
-                state.write_u8(4);
-            }
-        }
-    }
-}
-*/
 
 impl Value {
     pub fn is_truthy(&self) -> bool {
@@ -155,6 +129,12 @@ impl From<Rc<dyn Callable>> for Value {
     }
 }
 
+impl From<Class> for Value {
+    fn from(class: Class) -> Self {
+        Self::Class(class)
+    }
+}
+
 impl From<Function> for Value {
     fn from(fun: Function) -> Self {
         Self::Callable(Rc::new(fun))
@@ -171,6 +151,7 @@ impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Callable { .. } => write!(f, "fun"),
+            Self::Class { .. } => write!(f, "class"),
             Self::Instance(i) => write!(f, "{}", i),
             Self::String(s) => write!(f, "{}", s),
             Self::Number(n) => write!(f, "{}", n),
