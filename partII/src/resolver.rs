@@ -18,6 +18,7 @@ pub struct Resolver<'a> {
 enum FunctionType {
     None,
     Function,
+    Initializer,
     Method,
 }
 
@@ -123,7 +124,11 @@ impl<'a> Stmt {
                 resolver.scopes.last_mut().unwrap().insert("this", true);
 
                 for method in methods {
-                    let declaration = FunctionType::Method;
+                    let declaration = if method.is_initializer {
+                        FunctionType::Initializer
+                    } else {
+                        FunctionType::Method
+                    };
                     resolver.resolve_function(method, declaration)?;
                 }
 
@@ -162,6 +167,8 @@ impl<'a> Stmt {
             } => {
                 if resolver.current_function == FunctionType::None {
                     return Err(anyhow!("Can't return from top-level code."))?;
+                } else if resolver.current_function == FunctionType::Initializer {
+                    return Err(anyhow!("Can't return a value from an initializer."))?;
                 }
                 value.resolve(resolver)
             }
