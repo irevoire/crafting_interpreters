@@ -142,3 +142,9 @@ impl Display for Token {
         write!(f, "{:?} `{}`", self.ty, self.lexeme)
     }
 }
+
+impl AsRef<str> for Token {
+    fn as_ref(&self) -> &str {
+        &self.lexeme
+    }
+}

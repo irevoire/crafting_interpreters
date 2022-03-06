@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, rc::Rc};
 
 use crate::{class::Class, error::RuntimeError, token::Token, value::Value};
 
@@ -7,14 +7,15 @@ use anyhow::anyhow;
 #[derive(Debug, Clone)]
 pub struct Instance {
     class: Class,
-    fields: HashMap<String, Value>,
+    // we want to keep the same enev between all calls on a same instance
+    fields: Rc<HashMap<String, Value>>,
 }
 
 impl Instance {
     pub fn new(class: Class) -> Self {
         Self {
             class,
-            fields: HashMap::default(),
+            fields: Rc::default(),
         }
     }
 
@@ -29,7 +30,7 @@ impl Instance {
     }
 
     pub fn set(&mut self, name: &Token, value: Value) {
-        self.fields.insert(name.lexeme.clone(), value);
+        unsafe { Rc::get_mut_unchecked(&mut self.fields) }.insert(name.lexeme.clone(), value);
     }
 }
 

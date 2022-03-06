@@ -44,3 +44,21 @@ class Truc {
 var truc = Truc();
 
 truc.a("main");
+
+// ------------ testing init
+
+class Count {
+    init(start) {
+        this.current = start;
+    }
+
+    next() {
+        this.current = this.current + 1;
+        return this.current - 1;
+    }
+}
+
+var counter = Count(3);
+print counter.next();
+print counter.next();
+print counter.next();

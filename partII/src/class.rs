@@ -30,13 +30,20 @@ impl Display for Class {
 impl Callable for Class {
     fn call(
         &mut self,
-        _interpreter: &mut crate::interpreter::Interpreter,
-        _arguments: Vec<crate::value::Value>,
+        interpreter: &mut crate::interpreter::Interpreter,
+        arguments: Vec<crate::value::Value>,
     ) -> Result<crate::value::Value, crate::error::RuntimeError> {
-        Ok(Instance::new(self.clone()).into())
+        let instance = Instance::new(self.clone());
+        if let Some(initializer) = self.find_method("init") {
+            initializer
+                .bind(instance.clone())
+                .call(interpreter, arguments)?;
+        }
+
+        Ok(instance.into())
     }
 
     fn arity(&self) -> usize {
-        0
+        self.find_method("init").map(Callable::arity).unwrap_or(0)
     }
 }

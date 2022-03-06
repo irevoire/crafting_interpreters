@@ -105,10 +105,13 @@ impl Parser {
 
         let body = self.block()?;
 
+        let is_initializer = kind == "method" && name.lexeme == "init";
+
         Ok(callable::Function {
             name,
             params,
             body: Rc::new(body),
+            is_initializer,
             closure: None,
         })
     }

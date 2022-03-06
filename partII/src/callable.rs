@@ -1,8 +1,13 @@
 use std::rc::Rc;
 
 use crate::{
-    environment::Environment, error::RuntimeError, instance::Instance, interpreter::Interpreter,
-    stmt::Stmt, token::Token, value::Value,
+    environment::Environment,
+    error::RuntimeError,
+    instance::Instance,
+    interpreter::Interpreter,
+    stmt::Stmt,
+    token::{Token, TokenType},
+    value::Value,
 };
 
 use anyhow::anyhow;
@@ -49,6 +54,7 @@ pub struct Function {
     pub params: Vec<Token>,
     pub body: Rc<Vec<Stmt>>,
 
+    pub is_initializer: bool,
     pub closure: Option<Environment>,
 }
 
@@ -77,6 +83,7 @@ impl Function {
             name: self.name.clone(),
             params: self.params.clone(),
             body: self.body.clone(),
+            is_initializer: self.is_initializer,
             closure: Some(environment),
         }
     }
@@ -133,7 +140,26 @@ impl Callable for Function {
             self.closure = Some(env);
         }
 
-        result
+        let result = result?;
+
+        if self.is_initializer && self.closure.is_some() {
+            Ok(self
+                .closure
+                .as_ref()
+                .unwrap()
+                .get_at(
+                    0,
+                    &Token {
+                        ty: TokenType::This,
+                        lexeme: "this".to_string(),
+                        line: 0,
+                    },
+                )
+                .unwrap()
+                .clone())
+        } else {
+            Ok(result)
+        }
     }
 
     fn arity(&self) -> usize {
