@@ -26,3 +26,21 @@ Bacon().eat();
 var eat = Bacon().eat;
 eat();
 
+// ------------ testing this
+
+// print this;
+
+class Truc {
+    a(from) {
+        print "called a from " + from + ".";
+        this.b("a");
+    }
+
+    b(from) {
+        print "called b from " + from + ".";
+    }
+}
+
+var truc = Truc();
+
+truc.a("main");

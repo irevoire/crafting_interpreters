@@ -11,6 +11,7 @@ pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
     scopes: Vec<Scope<'a>>,
     current_function: FunctionType,
+    current_class: ClassType,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,12 +21,19 @@ enum FunctionType {
     Method,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ClassType {
+    None,
+    Class,
+}
+
 impl<'a> Resolver<'a> {
     pub fn new(interpreter: &'a mut Interpreter) -> Self {
         Self {
             interpreter,
             scopes: Vec::new(),
             current_function: FunctionType::None,
+            current_class: ClassType::None,
         }
     }
 
@@ -105,6 +113,9 @@ impl<'a> Stmt {
     fn resolve(&'a self, resolver: &mut Resolver<'a>) -> Result<()> {
         match self {
             Stmt::Class { name, methods } => {
+                let enclosing_class = resolver.current_class;
+                resolver.current_class = ClassType::Class;
+
                 resolver.declare(name)?;
                 resolver.define(name);
 
@@ -117,6 +128,8 @@ impl<'a> Stmt {
                 }
 
                 resolver.end_scope();
+
+                resolver.current_class = enclosing_class;
                 Ok(())
             }
             Stmt::Block(stmts) => {
@@ -210,7 +223,12 @@ impl Expr {
 
                 resolver.resolve_local(self, name)
             }
-            Expr::This { keyword } => resolver.resolve_local(self, keyword),
+            Expr::This { keyword } => {
+                if resolver.current_class == ClassType::None {
+                    return Err(anyhow::anyhow!("Can't use `this` outside of a class."));
+                }
+                resolver.resolve_local(self, keyword)
+            }
         }
     }
 }

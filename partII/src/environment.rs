@@ -26,6 +26,11 @@ impl Environment {
         self.enclosing.map(|env| *env)
     }
 
+    pub fn pop(mut self) -> Environment {
+        self.enclosing = None;
+        self
+    }
+
     pub fn define(&mut self, name: String, value: Value) {
         self.values.insert(name, value);
     }

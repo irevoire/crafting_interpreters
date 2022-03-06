@@ -2,7 +2,11 @@ use anyhow::anyhow;
 
 use std::{fmt::Display, rc::Rc};
 
-use crate::{callable::Callable, error::RuntimeError, instance::Instance};
+use crate::{
+    callable::{Callable, Function},
+    error::RuntimeError,
+    instance::Instance,
+};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -148,6 +152,12 @@ impl From<bool> for Value {
 impl From<Rc<dyn Callable>> for Value {
     fn from(fun: Rc<dyn Callable>) -> Self {
         Self::Callable(fun)
+    }
+}
+
+impl From<Function> for Value {
+    fn from(fun: Function) -> Self {
+        Self::Callable(Rc::new(fun))
     }
 }
 

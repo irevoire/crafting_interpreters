@@ -4,7 +4,7 @@ use crate::{class::Class, error::RuntimeError, token::Token, value::Value};
 
 use anyhow::anyhow;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Instance {
     class: Class,
     fields: HashMap<String, Value>,
@@ -22,7 +22,7 @@ impl Instance {
         if let Some(field) = self.fields.get(&name.lexeme) {
             Ok(field.clone())
         } else if let Some(method) = self.class.find_method(&name.lexeme) {
-            Ok(method.to_value())
+            Ok(method.bind(self.clone()).into())
         } else {
             Err(anyhow!("Undefined property `{}`.", name.lexeme))?
         }

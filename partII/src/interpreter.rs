@@ -232,7 +232,7 @@ impl Expr {
                     _ => Err(anyhow!("Only instances have fields."))?,
                 }
             }
-            Expr::This { .. } => todo!(),
+            Expr::This { keyword } => Ok(interpreter.lookup_variable(keyword, self)?.clone()),
             Expr::Unary { operator, right } => match operator.ty {
                 TokenType::Bang => Ok((right.evaluate(interpreter)?.is_falsy()).into()),
                 TokenType::Minus => right.evaluate(interpreter)?.map_number(|n| -n),

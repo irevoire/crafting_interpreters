@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use crate::{
-    environment::Environment, error::RuntimeError, interpreter::Interpreter, stmt::Stmt,
-    token::Token, value::Value,
+    environment::Environment, error::RuntimeError, instance::Instance, interpreter::Interpreter,
+    stmt::Stmt, token::Token, value::Value,
 };
 
 use anyhow::anyhow;
@@ -70,17 +70,16 @@ impl Function {
         (Rc::new(self.clone()) as Rc<dyn Callable>).into()
     }
 
-    /*
     pub fn bind(&self, instance: Instance) -> Self {
         let mut environment = Environment::new();
-        environment.define("this".to_string(), instance;
+        environment.define("this".to_string(), instance.into());
         Self {
             name: self.name.clone(),
             params: self.params.clone(),
             body: self.body.clone(),
+            closure: Some(environment),
         }
     }
-    */
 }
 
 impl Callable for Function {
@@ -128,11 +127,10 @@ impl Callable for Function {
         std::mem::swap(&mut local_interpreter.locals, &mut interpreter.locals);
 
         // restore the env of the closure
-        let closure = std::mem::take(&mut local_interpreter.env)
-            .destroy()
-            .unwrap();
+        let env = local_interpreter.env.pop();
+
         if is_closure {
-            self.closure = Some(closure);
+            self.closure = Some(env);
         }
 
         result
