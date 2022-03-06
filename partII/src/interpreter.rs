@@ -30,6 +30,10 @@ impl Interpreter {
         let mut interpreter = Self::default();
 
         interpreter.define(String::from("clock"), native_functions::Clock::value());
+        interpreter.define(
+            String::from("readLines"),
+            native_functions::ReadLines::value(),
+        );
 
         interpreter
     }

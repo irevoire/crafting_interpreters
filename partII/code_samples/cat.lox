@@ -1,0 +1,4 @@
+while (true) {
+    var line = readLines();
+    print line;
+}
