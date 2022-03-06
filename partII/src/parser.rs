@@ -109,6 +109,7 @@ impl Parser {
             name,
             params,
             body: Rc::new(body),
+            closure: None,
         })
     }
 
@@ -440,6 +441,9 @@ impl Parser {
                 self.consume(&TokenType::RightParen, "Expect `)` after expression.")?;
                 Expr::group(expr)
             }
+            TokenType::This => Expr::This {
+                keyword: token.clone(),
+            },
             TokenType::Identifier(_) => Expr::Variable {
                 name: token.clone(),
             },

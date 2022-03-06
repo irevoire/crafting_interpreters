@@ -29,7 +29,7 @@ impl Display for Class {
 
 impl Callable for Class {
     fn call(
-        &self,
+        &mut self,
         _interpreter: &mut crate::interpreter::Interpreter,
         _arguments: Vec<crate::value::Value>,
     ) -> Result<crate::value::Value, crate::error::RuntimeError> {

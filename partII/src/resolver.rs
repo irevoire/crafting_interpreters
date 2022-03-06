@@ -75,7 +75,6 @@ impl<'a> Resolver<'a> {
     }
 
     fn resolve_function(&mut self, function: &'a Function, ty: FunctionType) -> Result<()> {
-        let enclosing_function = self.current_function;
         self.current_function = ty;
 
         self.begin_scope();
@@ -86,7 +85,6 @@ impl<'a> Resolver<'a> {
 
         self.resolve_stmts(&function.body)?;
         self.end_scope();
-        self.current_function = enclosing_function;
         Ok(())
     }
 
@@ -110,10 +108,15 @@ impl<'a> Stmt {
                 resolver.declare(name)?;
                 resolver.define(name);
 
+                resolver.begin_scope();
+                resolver.scopes.last_mut().unwrap().insert("this", true);
+
                 for method in methods {
                     let declaration = FunctionType::Method;
                     resolver.resolve_function(method, declaration)?;
                 }
+
+                resolver.end_scope();
                 Ok(())
             }
             Stmt::Block(stmts) => {
@@ -197,6 +200,7 @@ impl Expr {
                 value.resolve(resolver)?;
                 object.resolve(resolver)
             }
+            Expr::Unary { right, .. } => right.resolve(resolver),
             Expr::Variable { name } => {
                 if !resolver.is_empty() && resolver.get(&name.lexeme) == Some(false) {
                     return Err(anyhow::anyhow!(
@@ -206,7 +210,7 @@ impl Expr {
 
                 resolver.resolve_local(self, name)
             }
-            Expr::Unary { right, .. } => right.resolve(resolver),
+            Expr::This { keyword } => resolver.resolve_local(self, keyword),
         }
     }
 }

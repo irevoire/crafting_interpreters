@@ -23,3 +23,6 @@ class Bacon {
 }
 
 Bacon().eat();
+var eat = Bacon().eat;
+eat();
+

@@ -19,7 +19,7 @@ impl Clock {
 
 impl Callable for Clock {
     fn call(
-        &self,
+        &mut self,
         _interpreter: &mut Interpreter,
         arguments: Vec<Value>,
     ) -> Result<Value, RuntimeError> {

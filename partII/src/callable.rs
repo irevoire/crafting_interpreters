@@ -9,7 +9,7 @@ use anyhow::anyhow;
 
 pub trait Callable: std::fmt::Debug {
     fn call(
-        &self,
+        &mut self,
         interpreter: &mut Interpreter,
         arguments: Vec<Value>,
     ) -> Result<Value, RuntimeError>;
@@ -18,7 +18,7 @@ pub trait Callable: std::fmt::Debug {
 
 impl Callable for Value {
     fn call(
-        &self,
+        &mut self,
         interpreter: &mut Interpreter,
         arguments: Vec<Value>,
     ) -> Result<Value, RuntimeError> {
@@ -28,7 +28,9 @@ impl Callable for Value {
                 fun.arity(),
                 arguments.len()
             ))?,
-            Self::Callable(fun) => fun.call(interpreter, arguments),
+            Self::Callable(fun) => unsafe {
+                Rc::get_mut_unchecked(fun).call(interpreter, arguments)
+            },
             _ => Err(anyhow!("Can only call functions or classes."))?,
         }
     }
@@ -46,22 +48,44 @@ pub struct Function {
     pub name: Token,
     pub params: Vec<Token>,
     pub body: Rc<Vec<Stmt>>,
+
+    pub closure: Option<Environment>,
 }
 
 impl Function {
     pub fn evaluate(&self, env: &mut Environment) -> Result<(), RuntimeError> {
-        env.define(self.name.lexeme.to_string(), self.to_value());
+        let value = self.clone().with_environment(env.clone()).to_value();
+        env.define(self.name.lexeme.to_string(), value);
         Ok(())
+    }
+
+    pub fn with_environment(self, env: Environment) -> Self {
+        Self {
+            closure: Some(env),
+            ..self
+        }
     }
 
     pub fn to_value(&self) -> Value {
         (Rc::new(self.clone()) as Rc<dyn Callable>).into()
     }
+
+    /*
+    pub fn bind(&self, instance: Instance) -> Self {
+        let mut environment = Environment::new();
+        environment.define("this".to_string(), instance;
+        Self {
+            name: self.name.clone(),
+            params: self.params.clone(),
+            body: self.body.clone(),
+        }
+    }
+    */
 }
 
 impl Callable for Function {
     fn call(
-        &self,
+        &mut self,
         interpreter: &mut Interpreter,
         arguments: Vec<Value>,
     ) -> Result<Value, RuntimeError> {
@@ -73,20 +97,43 @@ impl Callable for Function {
             ))?;
         }
 
-        let previous_env = std::mem::take(&mut interpreter.env);
-        interpreter.env.enclose(previous_env);
+        // we create a new interpreter just for the execution of this function
+        let mut local_interpreter = Interpreter::new();
+
+        // we extract the global env and the locals from the original interpreter
+        std::mem::swap(&mut local_interpreter.locals, &mut interpreter.locals);
+        std::mem::swap(local_interpreter.globals_mut(), interpreter.globals_mut());
+
+        let is_closure = self.closure.is_some();
+
+        // extract the env of the closure
+        let mut env = Environment::new();
+        let closure = self.closure.as_mut().unwrap_or(&mut env);
+        let closure = std::mem::take(closure);
+
+        local_interpreter.enclosed_by(closure);
 
         for (param, arg) in self.params.iter().zip(arguments) {
-            interpreter.define(param.lexeme.to_string(), arg);
+            local_interpreter.define(param.lexeme.to_string(), arg);
         }
 
-        let result = match Stmt::Block(self.body.clone()).evaluate(interpreter) {
+        let result = match Stmt::Block(self.body.clone()).evaluate(&mut local_interpreter) {
             Ok(()) => Ok(Value::Nil),
             Err(RuntimeError::Return(value)) => Ok(value),
             Err(e) => Err(e),
         };
 
-        interpreter.env = std::mem::take(&mut interpreter.env).destroy().unwrap();
+        // we restore the global env and the locals
+        std::mem::swap(local_interpreter.globals_mut(), interpreter.globals_mut());
+        std::mem::swap(&mut local_interpreter.locals, &mut interpreter.locals);
+
+        // restore the env of the closure
+        let closure = std::mem::take(&mut local_interpreter.env)
+            .destroy()
+            .unwrap();
+        if is_closure {
+            self.closure = Some(closure);
+        }
 
         result
     }

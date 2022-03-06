@@ -1,13 +1,13 @@
 use anyhow::anyhow;
 
-use std::{fmt::Display, rc::Rc, sync::Mutex};
+use std::{fmt::Display, rc::Rc};
 
 use crate::{callable::Callable, error::RuntimeError, instance::Instance};
 
 #[derive(Debug, Clone)]
 pub enum Value {
     Callable(Rc<dyn Callable>),
-    Instance(Rc<Mutex<Instance>>),
+    Instance(Rc<Instance>),
     String(String),
     Number(f64),
     Bool(bool),
@@ -153,7 +153,7 @@ impl From<Rc<dyn Callable>> for Value {
 
 impl From<Instance> for Value {
     fn from(instance: Instance) -> Self {
-        Self::Instance(Rc::new(Mutex::new(instance)))
+        Self::Instance(Rc::new(instance))
     }
 }
 
@@ -161,7 +161,7 @@ impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Callable { .. } => write!(f, "fun"),
-            Self::Instance(i) => write!(f, "{}", i.lock().unwrap()),
+            Self::Instance(i) => write!(f, "{}", i),
             Self::String(s) => write!(f, "{}", s),
             Self::Number(n) => write!(f, "{}", n),
             Self::Bool(b) => write!(f, "{}", b),

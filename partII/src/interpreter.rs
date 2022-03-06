@@ -179,7 +179,7 @@ impl Expr {
                 paren: _,
                 arguments,
             } => {
-                let callee = callee.evaluate(interpreter)?;
+                let mut callee = callee.evaluate(interpreter)?;
 
                 let arguments = arguments
                     .into_iter()
@@ -191,7 +191,7 @@ impl Expr {
             Expr::Get { object, name } => {
                 let object = object.evaluate(interpreter)?;
                 match object {
-                    Value::Instance(object) => object.lock().unwrap().get(name),
+                    Value::Instance(object) => object.get(name),
                     _ => Err(anyhow!("Only object have properties."))?,
                 }
             }
@@ -223,14 +223,16 @@ impl Expr {
             } => {
                 let object = object.evaluate(interpreter)?;
                 match object {
-                    Value::Instance(object) => {
+                    Value::Instance(mut object) => {
                         let value = value.evaluate(interpreter)?;
-                        object.lock().unwrap().set(name, value.clone());
+                        let object = unsafe { Rc::get_mut_unchecked(&mut object) };
+                        object.set(name, value.clone());
                         Ok(value)
                     }
                     _ => Err(anyhow!("Only instances have fields."))?,
                 }
             }
+            Expr::This { .. } => todo!(),
             Expr::Unary { operator, right } => match operator.ty {
                 TokenType::Bang => Ok((right.evaluate(interpreter)?.is_falsy()).into()),
                 TokenType::Minus => right.evaluate(interpreter)?.map_number(|n| -n),

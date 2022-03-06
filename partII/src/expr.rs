@@ -38,12 +38,15 @@ pub enum Expr {
         name: Token,
         value: Box<Expr>,
     },
-    Variable {
-        name: Token,
+    This {
+        keyword: Token,
     },
     Unary {
         operator: Token,
         right: Box<Expr>,
+    },
+    Variable {
+        name: Token,
     },
 }
 
@@ -102,8 +105,9 @@ impl Display for Expr {
             Self::Grouping { .. } => write!(f, "grouping"),
             Self::Logical { operator, .. } => write!(f, "{}", operator.lexeme),
             Self::Literal { value } => write!(f, "{}", value),
-            Self::Unary { operator, .. } => write!(f, "{}", operator.lexeme),
             Expr::Variable { name } => write!(f, "{}", name),
+            Self::Unary { operator, .. } => write!(f, "{}", operator.lexeme),
+            Expr::This { .. } => write!(f, "this"),
         }
     }
 }

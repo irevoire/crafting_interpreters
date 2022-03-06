@@ -17,6 +17,11 @@ impl Environment {
         self.enclosing = Some(Box::new(enclosing));
     }
 
+    pub fn enclosed_by(&mut self, mut enclosing: Self) {
+        std::mem::swap(self, &mut enclosing);
+        self.enclosing = Some(Box::new(enclosing));
+    }
+
     pub fn destroy(self) -> Option<Environment> {
         self.enclosing.map(|env| *env)
     }
@@ -89,9 +94,6 @@ impl Environment {
         distance: usize,
         name: &Token,
     ) -> Result<&mut Value, RuntimeError> {
-        if name.lexeme == "n" {
-            dbg!(&self.values);
-        }
         if distance == 0 {
             self.get_mut(name)
         } else {
