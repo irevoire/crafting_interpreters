@@ -34,6 +34,10 @@ impl Interpreter {
             String::from("readLines"),
             native_functions::ReadLines::value(),
         );
+        interpreter.define(
+            String::from("parseInt"),
+            native_functions::ParseInt::value(),
+        );
 
         interpreter
     }
