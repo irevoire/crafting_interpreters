@@ -62,3 +62,15 @@ var counter = Count(3);
 print counter.next();
 print counter.next();
 print counter.next();
+
+// ------------ testing init
+
+class Doughnut {
+    cook() {
+        print "Fry until golden brown.";
+    }
+}
+
+class BostonCream < Doughnut {}
+
+BostonCream().cook();
