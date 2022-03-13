@@ -30,7 +30,11 @@ impl Callable for ReadLines {
         chars.next_back();
         let line = chars.as_str();
 
-        Ok(line.into())
+        if line.is_empty() {
+            Ok(Value::Nil)
+        } else {
+            Ok(line.into())
+        }
     }
 
     fn arity(&self) -> usize {

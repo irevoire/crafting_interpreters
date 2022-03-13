@@ -1,0 +1,24 @@
+fun divide(a, b) {
+  if (a < b) {
+    return 0;
+  } else if (a > b * 1000) {
+    return 1000 + divide(a - b * 1000, b);
+  } else if (a > b * 100) {
+    return 100 + divide(a - b * 100, b);
+  } else if (a > b * 10) {
+    return 10 + divide(a - b * 10, b);
+  } else {
+    return 1 + divide(a - b, b);
+  }
+}
+
+var lines = readLines();
+var res = 0;
+
+while (lines) {
+  var line = parseInt(lines);
+  res = res + ((divide(line, 3)) - 2);
+  lines = readLines();
+}
+
+print res;
