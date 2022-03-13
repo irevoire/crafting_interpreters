@@ -7,7 +7,7 @@ use anyhow::anyhow;
 #[derive(Debug, Clone)]
 pub struct Instance {
     class: Class,
-    // we want to keep the same enev between all calls on a same instance
+    // we want to keep the same env between all calls on a same instance
     fields: Rc<HashMap<String, Value>>,
 }
 

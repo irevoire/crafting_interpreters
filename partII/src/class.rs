@@ -25,8 +25,8 @@ impl Class {
         }
     }
 
-    pub fn find_method(&self, name: &str) -> Option<&Function> {
-        if let Some(method) = self.methods.get(name) {
+    pub fn find_method(&self, name: impl AsRef<str>) -> Option<&Function> {
+        if let Some(method) = self.methods.get(name.as_ref()) {
             Some(method)
         } else if let Some(ref superclass) = self.superclass {
             superclass.find_method(name)

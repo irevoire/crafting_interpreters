@@ -81,7 +81,7 @@ impl Function {
 
     pub fn bind(&self, instance: Instance) -> Self {
         let mut environment = Environment::new();
-        environment.define("this".to_string(), instance.into());
+        environment.define("this", instance);
         Self {
             name: self.name.clone(),
             params: self.params.clone(),

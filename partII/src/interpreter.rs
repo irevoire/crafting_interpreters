@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
     ops::{Deref, DerefMut},
-    rc::Rc,
 };
 
 use crate::{
@@ -112,12 +111,20 @@ impl Stmt {
                     .transpose()?;
                 interpreter.define(name.lexeme.clone(), Value::Nil);
 
+                if let Some(_) = superclass {
+                    interpreter.env.enclosed_by(Environment::new());
+                    interpreter.define("super", superclass.clone().unwrap());
+                }
+
                 let methods = methods
                     .iter()
                     .map(|method| (method.name.lexeme.clone(), method.clone()))
                     .collect();
 
-                let class = Class::new(name.lexeme.clone(), methods, superclass);
+                let class = Class::new(name.lexeme.clone(), methods, superclass.clone());
+                if let Some(_) = superclass {
+                    interpreter.declose();
+                }
                 interpreter.assign(name, class.into())?;
             }
             Stmt::Expression(expr) => drop(expr.evaluate(interpreter)?),
@@ -246,11 +253,31 @@ impl Expr {
                 match object {
                     Value::Instance(mut object) => {
                         let value = value.evaluate(interpreter)?;
-                        let object = unsafe { Rc::get_mut_unchecked(&mut object) };
                         object.set(name, value.clone());
                         Ok(value)
                     }
                     _ => Err(anyhow!("Only instances have fields."))?,
+                }
+            }
+            Expr::Super { keyword, method } => {
+                println!("HERE");
+                let distance = interpreter.locals.get(&(self as *const Expr)).unwrap();
+                println!("distance: {}", distance);
+                println!("{:#?}", interpreter.env);
+                // let superclass = interpreter.get_at(*distance, keyword)?.clone().class()?;
+                let superclass = interpreter.get(keyword)?.clone().class()?;
+                println!("HERE2");
+                let object = interpreter
+                    .env
+                    .get_at(*distance - 1, "this")?
+                    .clone()
+                    .instance()?;
+
+                println!("HOARE");
+                if let Some(method) = superclass.find_method(method) {
+                    Ok(method.bind(object).into())
+                } else {
+                    Err(anyhow!("Can't use `super` in a class with no superclass"))?
                 }
             }
             Expr::This { keyword } => Ok(interpreter.lookup_variable(keyword, self)?.clone()),

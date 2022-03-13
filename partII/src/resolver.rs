@@ -128,6 +128,9 @@ impl<'a> Stmt {
                         return Err(anyhow!("A class can't inherit from itself."));
                     }
                     superclass.resolve(resolver)?;
+
+                    resolver.begin_scope();
+                    resolver.scopes.last_mut().unwrap().insert("super", true);
                 }
 
                 resolver.begin_scope();
@@ -143,6 +146,10 @@ impl<'a> Stmt {
                 }
 
                 resolver.end_scope();
+
+                if let Some(_) = superclass {
+                    resolver.end_scope();
+                }
 
                 resolver.current_class = enclosing_class;
                 Ok(())
@@ -230,6 +237,7 @@ impl Expr {
                 value.resolve(resolver)?;
                 object.resolve(resolver)
             }
+            Expr::Super { keyword, .. } => resolver.resolve_local(self, keyword),
             Expr::Unary { right, .. } => right.resolve(resolver),
             Expr::Variable { name } => {
                 if !resolver.is_empty() && resolver.get(&name.lexeme) == Some(false) {

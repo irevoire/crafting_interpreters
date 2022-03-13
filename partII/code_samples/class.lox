@@ -63,7 +63,7 @@ print counter.next();
 print counter.next();
 print counter.next();
 
-// ------------ testing init
+// ------------ testing inheritance
 
 class Doughnut {
     cook() {
@@ -74,3 +74,14 @@ class Doughnut {
 class BostonCream < Doughnut {}
 
 BostonCream().cook();
+
+// ------------ testing super
+
+class Eclair < Doughnut {
+    cook() {
+        super.cook();
+        print "Pipe full of custard and coat with chocolate.";
+    }
+}
+
+Eclair().cook();

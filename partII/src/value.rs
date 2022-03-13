@@ -13,7 +13,7 @@ use crate::{
 pub enum Value {
     Callable(Rc<dyn Callable>),
     Class(Class),
-    Instance(Rc<Instance>),
+    Instance(Instance),
     String(String),
     Number(f64),
     Bool(bool),
@@ -91,6 +91,20 @@ impl Value {
         }
     }
 
+    pub fn class(self) -> Result<Class, RuntimeError> {
+        match self {
+            Self::Class(class) => Ok(class),
+            _ => Err(anyhow!("Expected `class` but instead got {:?}", self))?,
+        }
+    }
+
+    pub fn instance(self) -> Result<Instance, RuntimeError> {
+        match self {
+            Self::Instance(instance) => Ok(instance),
+            _ => Err(anyhow!("Expected `instance` but instead got {:?}", self))?,
+        }
+    }
+
     pub fn nil(self) -> Result<(), RuntimeError> {
         match self {
             Self::Nil => Ok(()),
@@ -143,7 +157,7 @@ impl From<Function> for Value {
 
 impl From<Instance> for Value {
     fn from(instance: Instance) -> Self {
-        Self::Instance(Rc::new(instance))
+        Self::Instance(instance)
     }
 }
 

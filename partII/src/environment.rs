@@ -4,7 +4,7 @@ use crate::{error::RuntimeError, token::Token, value::Value};
 
 #[derive(Default, Debug, Clone)]
 pub struct Environment {
-    enclosing: Option<Box<Environment>>,
+    pub enclosing: Option<Box<Environment>>,
     values: HashMap<String, Value>,
 }
 
@@ -22,6 +22,13 @@ impl Environment {
         self.enclosing = Some(Box::new(enclosing));
     }
 
+    /// Reverse a `enclosed_by`
+    pub fn declose(&mut self) {
+        let inner = *self.enclosing.take().unwrap();
+        // drop the old env
+        let _ = std::mem::replace(self, inner);
+    }
+
     pub fn destroy(self) -> Option<Environment> {
         self.enclosing.map(|env| *env)
     }
@@ -31,8 +38,8 @@ impl Environment {
         self
     }
 
-    pub fn define(&mut self, name: String, value: Value) {
-        self.values.insert(name, value);
+    pub fn define(&mut self, name: impl AsRef<str>, value: impl Into<Value>) {
+        self.values.insert(name.as_ref().to_string(), value.into());
     }
 
     pub fn assign(&mut self, name: &Token, value: Value) -> Result<(), RuntimeError> {
@@ -56,21 +63,18 @@ impl Environment {
         }
     }
 
-    pub fn get(&self, name: &Token) -> Result<&Value, RuntimeError> {
+    pub fn get(&self, name: impl AsRef<str>) -> Result<&Value, RuntimeError> {
+        let name = name.as_ref();
         Ok(self
             .values
-            .get(&name.lexeme)
+            .get(name)
             .or_else(|| {
                 self.enclosing
                     .as_ref()
                     .map(|env| env.get(name).ok())
                     .flatten()
             })
-            .ok_or(anyhow::anyhow!(
-                "Undefined variable `{}` at line {}.",
-                name.lexeme,
-                name.line
-            ))?)
+            .ok_or(anyhow::anyhow!("Undefined variable `{}`.", name))?)
     }
 
     pub fn get_mut(&mut self, name: &Token) -> Result<&mut Value, RuntimeError> {
@@ -86,7 +90,7 @@ impl Environment {
             .ok_or(anyhow::anyhow!("Undefined variable `{}`.", name.lexeme))?)
     }
 
-    pub fn get_at(&self, distance: usize, name: &Token) -> Result<&Value, RuntimeError> {
+    pub fn get_at(&self, distance: usize, name: impl AsRef<str>) -> Result<&Value, RuntimeError> {
         if distance == 0 {
             self.get(name)
         } else {

@@ -457,6 +457,12 @@ impl Parser {
             TokenType::This => Expr::This {
                 keyword: token.clone(),
             },
+            TokenType::Super => {
+                let keyword = token.clone();
+                self.consume(&TokenType::Dot, "Expect `.` after `super`.")?;
+                let method = self.consume_ident("Expect superclass method name.")?;
+                Expr::Super { keyword, method }
+            }
             TokenType::Identifier(_) => Expr::Variable {
                 name: token.clone(),
             },

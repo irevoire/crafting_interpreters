@@ -38,6 +38,10 @@ pub enum Expr {
         name: Token,
         value: Box<Expr>,
     },
+    Super {
+        keyword: Token,
+        method: Token,
+    },
     This {
         keyword: Token,
     },
@@ -113,6 +117,7 @@ impl Display for Expr {
             Self::Logical { operator, .. } => write!(f, "{}", operator.lexeme),
             Self::Literal { value } => write!(f, "{}", value),
             Expr::Variable { name } => write!(f, "{}", name),
+            Expr::Super { .. } => write!(f, "super"),
             Self::Unary { operator, .. } => write!(f, "{}", operator.lexeme),
             Expr::This { .. } => write!(f, "this"),
         }
