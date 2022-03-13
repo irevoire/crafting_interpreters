@@ -1,19 +1,18 @@
-use std::fmt::Display;
-
 use crate::value::Value;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum OpCode {
     Constant,
+    Negate,
     Return,
 }
 
 #[derive(Debug, Default, Clone)]
 pub struct Chunk {
-    code: Vec<u8>,
-    lines: Vec<usize>,
-    constants: Vec<Value>,
+    pub code: Vec<u8>,
+    pub lines: Vec<usize>,
+    pub constants: Vec<Value>,
 }
 
 impl Chunk {
@@ -24,6 +23,10 @@ impl Chunk {
     pub fn write(&mut self, byte: u8, line: usize) {
         self.code.push(byte);
         self.lines.push(line);
+    }
+
+    pub fn read(&self, idx: usize) -> u8 {
+        self.code[idx]
     }
 
     pub fn add_constant(&mut self, value: impl Into<Value>) -> usize {
@@ -49,7 +52,9 @@ impl Chunk {
 
         let instruction: u8 = self.code[offset];
         match unsafe { std::mem::transmute(instruction) } {
-            ins @ OpCode::Return => self.simple_instruction(format!("{:?}", ins), offset),
+            ins @ (OpCode::Negate | OpCode::Return) => {
+                self.simple_instruction(format!("{:?}", ins), offset)
+            }
             ins @ OpCode::Constant => self.constant_instruction(format!("{:?}", ins), offset),
             _ => {
                 println!("Unknown opcode {}", instruction);
