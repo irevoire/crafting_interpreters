@@ -4,6 +4,10 @@ use crate::value::Value;
 #[repr(u8)]
 pub enum OpCode {
     Constant,
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
     Negate,
     Return,
 }
@@ -52,9 +56,12 @@ impl Chunk {
 
         let instruction: u8 = self.code[offset];
         match unsafe { std::mem::transmute(instruction) } {
-            ins @ (OpCode::Negate | OpCode::Return) => {
-                self.simple_instruction(format!("{:?}", ins), offset)
-            }
+            ins @ (OpCode::Negate
+            | OpCode::Add
+            | OpCode::Subtract
+            | OpCode::Multiply
+            | OpCode::Divide
+            | OpCode::Return) => self.simple_instruction(format!("{:?}", ins), offset),
             ins @ OpCode::Constant => self.constant_instruction(format!("{:?}", ins), offset),
             _ => {
                 println!("Unknown opcode {}", instruction);

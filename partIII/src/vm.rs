@@ -17,12 +17,18 @@ impl Vm {
         self.run(chunk)
     }
 
-    pub fn push_value(&mut self, value: Value) {
+    fn push_value(&mut self, value: Value) {
         self.stack.push(value);
     }
 
-    pub fn pop_value(&mut self) -> Value {
+    fn pop_value(&mut self) -> Value {
         self.stack.pop().unwrap()
+    }
+
+    fn binary_op(&mut self, op: impl Fn(Value, Value) -> Value) {
+        let b = self.pop_value();
+        let a = self.pop_value();
+        self.push_value(op(a, b));
     }
 
     fn run(&mut self, chunk: &Chunk) -> InterpretResult {
@@ -36,6 +42,10 @@ impl Vm {
                     let constant = chunk.read_constant(ip);
                     self.push_value(constant);
                 }
+                OpCode::Add => self.binary_op(|a, b| a + b),
+                OpCode::Subtract => self.binary_op(|a, b| a - b),
+                OpCode::Multiply => self.binary_op(|a, b| a * b),
+                OpCode::Divide => self.binary_op(|a, b| a / b),
                 OpCode::Negate => {
                     let value = self.pop_value();
                     self.push_value(-value);
