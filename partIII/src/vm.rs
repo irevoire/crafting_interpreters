@@ -13,8 +13,9 @@ impl Vm {
         Self::default()
     }
 
-    pub fn interpret(&mut self, chunk: &Chunk) -> InterpretResult {
-        self.run(chunk)
+    pub fn interpret(&mut self, source: &str) -> InterpretResult {
+        let compiled = compiler::compile(source);
+        self.run(compiled)
     }
 
     fn push_value(&mut self, value: Value) {

@@ -7,8 +7,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error(transparent)]
     Setup(#[from] SetupError),
-    // #[error(transparent)]
-    // Scanner(#[from] ScannerErrors),
+    #[error(transparent)]
+    Parser(#[from] ParserError),
     // #[error(transparent)]
     // Parser(#[from] ParserErrors),
     // #[error(transparent)]
@@ -23,4 +23,14 @@ pub enum SetupError {
     Usage,
     #[error("IO Error: ")]
     Io(#[from] io::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum ParserError {
+    #[error("[line {line}] Error at `{token}`: {message}.")]
+    At {
+        line: usize,
+        token: String,
+        message: String,
+    },
 }
