@@ -21,6 +21,8 @@ fn main() -> Result<()> {
         return Err(SetupError::Usage)?;
     }
 
+    pretty_env_logger::init();
+
     if let Some(filename) = args.get(1) {
         run_file(filename)
     } else if atty::is(atty::Stream::Stdin) {
@@ -62,9 +64,12 @@ fn run_prompt() -> Result<()> {
     Ok(())
 }
 
-fn run(input: String, interpreter: &mut Vm) -> Result<()> {
-    compiler::compile(&input);
-    todo!()
+fn run(input: String, vm: &mut Vm) -> Result<()> {
+    println!("interpreting {input}");
+    vm.interpret(&input);
+    Ok(())
+    // compiler::Parser::compile(&input)?;
+    // todo!()
 
     /*
     let scanner = Scanner::new(input);

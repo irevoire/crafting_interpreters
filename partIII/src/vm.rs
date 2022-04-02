@@ -14,16 +14,19 @@ impl Vm {
     }
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        let compiled = compiler::compile(source);
-        self.run(compiled)
+        let compiled = crate::compiler::Parser::compile(source).unwrap();
+        self.run(&compiled)
     }
 
     fn push_value(&mut self, value: Value) {
+        println!("pushing {}", value);
         self.stack.push(value);
     }
 
     fn pop_value(&mut self) -> Value {
-        self.stack.pop().unwrap()
+        let value = self.stack.pop().unwrap();
+        println!("poping {}", value);
+        value
     }
 
     fn binary_op(&mut self, op: impl Fn(Value, Value) -> Value) {
@@ -37,6 +40,7 @@ impl Vm {
 
         loop {
             let opcode = chunk.read_opcode(ip);
+            println!("executing {:?}", opcode);
 
             match opcode {
                 OpCode::Constant => {

@@ -16,10 +16,13 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    pub fn scan_token(&mut self) -> Token {
+    pub fn scan_token(&mut self) -> Token<'a> {
+        log::trace!("scan_token");
+        self.skip_whitespace();
         self.start = self.current;
 
         if self.is_at_end() {
+            log::trace!("scan_token is at end. Return EoF");
             return self.make_token(TokenType::EoF);
         }
 
@@ -48,7 +51,7 @@ impl<'a> Scanner<'a> {
             '"' => self.string(),
             c if c.is_digit(10) => self.number(),
             c if c.is_ascii_alphabetic() || c == '_' => self.identifier(),
-            _ => todo!(),
+            c => todo!("{:?}", c),
         };
 
         self.error_token("Unexpected character.")
@@ -165,7 +168,7 @@ impl<'a> Scanner<'a> {
         current
     }
 
-    fn make_token(&self, ty: TokenType) -> Token {
+    fn make_token(&self, ty: TokenType) -> Token<'a> {
         Token {
             ty,
             lexeme: &self.source[self.start..self.current],
@@ -173,7 +176,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn error_token(&'a self, message: &'a str) -> Token {
+    fn error_token(&self, message: &'a str) -> Token<'a> {
         Token {
             ty: TokenType::Error,
             lexeme: message.as_ref(),
@@ -182,17 +185,18 @@ impl<'a> Scanner<'a> {
     }
 
     fn is_at_end(&self) -> bool {
-        self.source.len() >= self.current
+        self.source.len() <= self.current
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Token<'a> {
     pub ty: TokenType,
     pub lexeme: &'a str,
     pub line: usize,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
     // Single character tokens
     LeftParen,

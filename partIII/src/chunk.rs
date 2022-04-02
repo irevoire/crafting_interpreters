@@ -24,8 +24,8 @@ impl Chunk {
         Self::default()
     }
 
-    pub fn write(&mut self, byte: u8, line: usize) {
-        self.code.push(byte);
+    pub fn write(&mut self, byte: impl Into<u8>, line: usize) {
+        self.code.push(byte.into());
         self.lines.push(line);
     }
 
@@ -84,5 +84,11 @@ impl Chunk {
             self.constants[constant as usize]
         );
         offset + 2
+    }
+}
+
+impl From<OpCode> for u8 {
+    fn from(op: OpCode) -> Self {
+        op as u8
     }
 }
